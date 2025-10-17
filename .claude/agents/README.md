@@ -21,10 +21,15 @@ The Envoy Code Reviewer agent analyzes pull requests and code changes to ensure 
 The easiest way to invoke the agent:
 
 ```
+# Compare against main branch (default)
 /envoy-review
+
+# Compare against a specific branch
+/envoy-review develop
+/envoy-review upstream/main
 ```
 
-This will analyze all changes in your current branch compared to `main` and provide a comprehensive review report.
+This will analyze all changes in your current branch compared to the specified base branch (default: `main`) and provide a comprehensive review report.
 
 ### Direct Invocation
 

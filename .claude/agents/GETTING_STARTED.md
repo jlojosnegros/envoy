@@ -40,7 +40,11 @@ Expected output:
 Open Claude Code and type:
 
 ```
+# Compare against main (default)
 /envoy-review
+
+# Compare against a specific branch
+/envoy-review develop
 ```
 
 The agent will analyze your changes and provide a detailed report!

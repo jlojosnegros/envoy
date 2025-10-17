@@ -2,6 +2,22 @@
 
 This document provides practical examples of using the Envoy Code Reviewer agent in different scenarios.
 
+## Basic Usage
+
+```bash
+# Compare current branch against main (default)
+/envoy-review
+
+# Compare against a different base branch
+/envoy-review develop
+
+# Compare against upstream remote
+/envoy-review upstream/main
+
+# Using the helper script with custom base
+./scripts/envoy-review-helper.py --base develop --format markdown
+```
+
 ## Example 1: New HTTP Filter Development
 
 ### Scenario

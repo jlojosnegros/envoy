@@ -4,9 +4,18 @@ description: Review code changes with Envoy-specific standards and policies
 
 Please perform a comprehensive code review of my recent changes using the **Envoy Code Reviewer** agent.
 
+**Usage:**
+- `/envoy-review` - Compare against `main` branch (default)
+- `/envoy-review develop` - Compare against `develop` branch
+- `/envoy-review upstream/main` - Compare against `upstream/main` branch
+
 # Review Scope
 
+{{#if args}}
+Analyze all changes in my current branch compared to `{{args}}` and verify compliance with Envoy's contribution standards:
+{{else}}
 Analyze all changes in my current branch compared to `main` and verify compliance with Envoy's contribution standards:
+{{/if}}
 
 ## Required Checks
 
