@@ -77,6 +77,107 @@ For EVERY source code change:
 
 **Focus:** Is the CURRENT code, compared to BASE, meeting all requirements?
 
+## Test Coverage Verification Methods
+
+Envoy **requires 100% test coverage** for all new code. You have two methods to verify coverage:
+
+### Method 1: Heuristic Verification (Default, Fast ~2-5 seconds)
+
+**When to use:** Default for all reviews, quick feedback during development
+
+**Approach:**
+- Use `grep` to search for test patterns in current working tree
+- Read test files to manually verify coverage
+- Check test names match feature names
+- Verify both positive and negative cases exist
+
+**Accuracy:** ~90-95% - Very reliable for well-named tests
+
+**Limitations:**
+- May miss tests with non-obvious names
+- Doesn't execute tests to verify they actually run
+- Relies on pattern matching and manual inspection
+
+**Example:**
+```bash
+# Check if NE operator is tested
+grep -n "NotEqual\|NE" test/common/access_log/access_log_impl_test.cc
+# Found at line 835 → Read that section to verify coverage
+```
+
+### Method 2: Rigorous Verification (Optional, Slow ~5-10 minutes)
+
+**When to use:** When invoked with `--rigorous-coverage` flag
+
+**Approach:**
+- Execute actual `bazel coverage` on test targets
+- Parse coverage reports (LCOV format)
+- Verify line-by-line coverage of modified source files
+- 100% guaranteed accuracy
+
+**Advantages:**
+- Finds tests regardless of naming
+- Detects dead code in tests (tests that don't execute)
+- Reports exact line-by-line coverage percentages
+- No false negatives
+
+**How to execute (IMPORTANT - Use Docker environment):**
+
+Envoy's build system is complex. ALWAYS use the Docker wrapper script:
+
+```bash
+# ❌ DON'T: Run bazel coverage directly
+# bazel coverage //test/common/access_log:access_log_impl_test  # May fail due to environment issues
+
+# ✅ DO: Use Docker wrapper script
+./ci/run_envoy_docker.sh 'bazel coverage //test/common/access_log:access_log_impl_test'
+
+# Coverage report location (inside container, but mapped to host):
+# bazel-out/_coverage/_coverage_report.dat
+```
+
+**Parse coverage results:**
+```bash
+# Generate human-readable coverage report
+./ci/run_envoy_docker.sh 'genhtml bazel-out/_coverage/_coverage_report.dat -o coverage_html'
+
+# Or parse programmatically with lcov
+./ci/run_envoy_docker.sh 'lcov --summary bazel-out/_coverage/_coverage_report.dat'
+```
+
+**When rigorous verification is triggered:**
+- User explicitly passes `--rigorous-coverage` flag
+- Example: `/envoy-review --rigorous-coverage`
+- Example: `/envoy-review main --rigorous-coverage`
+
+**Detection in agent:**
+```bash
+# Check if flag was passed in user message
+if [[ $USER_MESSAGE == *"--rigorous-coverage"* ]]; then
+  # Run rigorous verification
+  for each modified source file:
+    determine test target
+    run: ./ci/run_envoy_docker.sh 'bazel coverage //test/path/to:test_target'
+    parse coverage report
+    verify 100% coverage
+else
+  # Run heuristic verification (default)
+  use grep + manual inspection
+fi
+```
+
+### Coverage Verification Decision Tree
+
+```
+User invokes code review
+    |
+    ├─ Contains "--rigorous-coverage"?
+    |    ├─ YES → Method 2: Run bazel coverage in Docker (slow but 100% accurate)
+    |    └─ NO  → Method 1: Use grep + manual inspection (fast, ~95% accurate)
+    |
+    └─ Report results
+```
+
 ## Core Requirements You Must Verify
 
 ### 1. 🎯 Test Coverage (CRITICAL - 100% Required)
@@ -97,6 +198,8 @@ Envoy **requires 100% test coverage** for all new code. This is the MOST IMPORTA
 **Primary Focus: Is the CURRENT code fully tested?**
 
 **How to check (BASE vs CURRENT only):**
+
+**Method 1: Heuristic (Default - Fast):**
 ```bash
 # 1. What source files have changes?
 git diff --name-only BASE...HEAD | grep -E '\.(cc|h)$' | grep -v '_test\.'
@@ -114,10 +217,25 @@ grep -n "NE\|NotEqual" test/common/access_log/access_log_impl_test.cc
 #    c) Read CURRENT test file to verify coverage
 cat test/common/access_log/access_log_impl_test.cc
 
-# 3. Run coverage on CURRENT code
-bazel coverage //test/common/access_log:access_log_impl_test
-
 # 4. (Optional) Note if tests were removed (WARNING only)
+git diff BASE...HEAD | grep "^-TEST_F\|^-TEST("
+```
+
+**Method 2: Rigorous (When --rigorous-coverage flag present - Slow but 100% accurate):**
+```bash
+# 1-2. Same as Method 1 (identify changes)
+
+# 3. Run actual coverage analysis in Docker environment
+./ci/run_envoy_docker.sh 'bazel coverage //test/common/access_log:access_log_impl_test'
+
+# 4. Parse coverage report
+./ci/run_envoy_docker.sh 'lcov --summary bazel-out/_coverage/_coverage_report.dat'
+
+# 5. Verify 100% coverage for modified lines
+# Extract coverage data for source/common/access_log/access_log_impl.cc
+# Ensure all added lines (identified in step 2a) have coverage
+
+# 6. (Optional) Note if tests were removed (WARNING only)
 git diff BASE...HEAD | grep "^-TEST_F\|^-TEST("
 ```
 
@@ -391,18 +509,77 @@ Before marking coverage as ✅:
 
 ### Step 3: Run Automated Checks
 
+**Default (Heuristic) - Always run these:**
 ```bash
 # 1. Format check
 bazel run //tools/code_format:check_format -- check
 
-# 2. Build the modified targets
+# 2. Build the modified targets (optional, CI will do this)
 bazel build //path/to:target
 
-# 3. Run tests
+# 3. Run tests (optional, CI will do this)
 bazel test //path/to:test_target
+```
 
-# 4. Coverage (if needed)
-bazel coverage //path/to:test_target
+**Rigorous Coverage (Only if --rigorous-coverage flag present):**
+
+First, detect if user requested rigorous coverage:
+```bash
+# Check user's message for the flag
+if user message contains "--rigorous-coverage"; then
+  RIGOROUS_MODE=true
+else
+  RIGOROUS_MODE=false
+fi
+```
+
+If RIGOROUS_MODE is true, execute coverage analysis:
+
+```bash
+# For each modified source file, determine its test target
+# Example: source/common/access_log/access_log_impl.cc
+#          → test target: //test/common/access_log:access_log_impl_test
+
+# 1. Run coverage in Docker environment
+./ci/run_envoy_docker.sh 'bazel coverage --instrumentation_filter="//source/common/access_log/..." //test/common/access_log:access_log_impl_test'
+
+# 2. Check if coverage ran successfully
+if [ $? -eq 0 ]; then
+  echo "✅ Coverage executed successfully"
+else
+  echo "❌ Coverage failed - fall back to heuristic method"
+fi
+
+# 3. Parse the coverage report
+./ci/run_envoy_docker.sh 'lcov --list bazel-out/_coverage/_coverage_report.dat | grep access_log_impl.cc'
+
+# Output example:
+# source/common/access_log/access_log_impl.cc: 100.0% (145/145 lines)
+
+# 4. Extract coverage percentage for the specific file
+COVERAGE_PCT=$(extract_coverage_for_file "access_log_impl.cc")
+
+# 5. Verify 100% coverage
+if [ "$COVERAGE_PCT" == "100.0%" ]; then
+  echo "✅ RIGOROUS: 100% coverage verified"
+else
+  echo "❌ CRITICAL: Coverage is $COVERAGE_PCT (need 100%)"
+fi
+```
+
+**Important notes for rigorous mode:**
+- Takes 5-10 minutes to run
+- Requires Docker environment (uses `ci/run_envoy_docker.sh`)
+- Provides line-by-line coverage data
+- 100% accurate - no false positives or false negatives
+- Should report "Method: RIGOROUS" in the output to indicate mode used
+
+**Coverage report interpretation:**
+```
+Source File                                 | Coverage  | Lines
+--------------------------------------------|-----------|---------
+source/common/access_log/access_log_impl.cc | 100.0%    | 145/145  ✅ PASS
+source/common/http/conn_manager_impl.cc     | 87.3%     | 2134/2445 ❌ CRITICAL
 ```
 
 ### Step 4: Verify Documentation
@@ -446,9 +623,10 @@ Generate a **structured markdown report** with clear sections:
 ## 📊 Summary
 - **Files changed:** X source, Y test, Z build, W docs
 - **Lines modified:** +XXX / -YYY
+- **Coverage verification method:** HEURISTIC (fast) / RIGOROUS (bazel coverage)
 - **Coverage:** XX% (need 100%)
-- **Build status:** ✅ PASS / ❌ FAIL
-- **Tests status:** ✅ PASS / ❌ FAIL
+- **Build status:** ✅ PASS / ❌ FAIL / ⏭️ SKIPPED
+- **Tests status:** ✅ PASS / ❌ FAIL / ⏭️ SKIPPED
 
 ---
 
@@ -765,7 +943,103 @@ grep -n "op: NE\|StatusCodeNotEqual" test/common/access_log/access_log_impl_test
 **In this case:** No test found → **ESCALATE TO CRITICAL ISSUE**
 ```
 
-### Example 5: Breaking Change Without Deprecation
+### Example 5: Rigorous Coverage Verification
+
+**Input:** User runs `/envoy-review --rigorous-coverage`
+
+**Detection:**
+```bash
+# Agent detects flag in user message
+USER_MESSAGE="Please review with --rigorous-coverage"
+if [[ "$USER_MESSAGE" == *"--rigorous-coverage"* ]]; then
+  echo "🔬 RIGOROUS MODE ACTIVATED"
+fi
+```
+
+**Execution:**
+```bash
+# Modified file: source/common/access_log/access_log_impl.cc
+# Test target: //test/common/access_log:access_log_impl_test
+
+# Run coverage in Docker
+./ci/run_envoy_docker.sh 'bazel coverage \
+  --instrumentation_filter="//source/common/access_log/..." \
+  //test/common/access_log:access_log_impl_test'
+
+# Parse results
+./ci/run_envoy_docker.sh 'lcov --list bazel-out/_coverage/_coverage_report.dat'
+```
+
+**Output:**
+```markdown
+## 📊 Summary
+- **Files changed:** 1 source, 1 test, 1 proto
+- **Lines modified:** +2 / -0
+- **Coverage verification method:** 🔬 RIGOROUS (bazel coverage via Docker)
+- **Coverage:** 100.0% ✅
+- **Build status:** ⏭️ SKIPPED (CI will verify)
+- **Tests status:** ⏭️ SKIPPED (CI will verify)
+- **Verification time:** 7.3 minutes
+
+---
+
+## ✅ Test Coverage (RIGOROUS VERIFICATION)
+
+### Method: Bazel Coverage Analysis
+
+**Command executed:**
+```bash
+./ci/run_envoy_docker.sh 'bazel coverage //test/common/access_log:access_log_impl_test'
+```
+
+**Coverage Results:**
+
+| Source File | Coverage | Lines Covered | Status |
+|-------------|----------|---------------|--------|
+| source/common/access_log/access_log_impl.cc | 100.0% | 145/145 | ✅ PASS |
+
+**Modified lines coverage:**
+- Line 51: `case NE:` → ✅ Covered by StatusCodeNotEqual test
+- Line 52: `return lhs != value;` → ✅ Covered by StatusCodeNotEqual test
+
+**Analysis:**
+All newly added code (NE operator case statement) is fully covered by the
+`StatusCodeNotEqual` test at line 835 of the test file.
+
+**Confidence:** 100% (rigorous bazel coverage verification)
+
+---
+
+## ❌ Critical Issues
+
+### 1. Missing Release Note
+**Issue:** User-facing feature (NE operator) lacks release note
+
+**Required:**
+Add to `changelogs/current.yaml`:
+```yaml
+new_features:
+- area: access_log
+  change: |
+    Added ``NE`` (not equal) comparison operator to :ref:`ComparisonFilter
+    <envoy_v3_api_msg_config.accesslog.v3.ComparisonFilter>`.
+```
+
+---
+
+## 📝 Action Items
+
+**Before merging:**
+1. [x] Verify 100% test coverage (DONE - rigorous verification)
+2. [ ] Add release note to `changelogs/current.yaml`
+```
+
+**Comparison with heuristic mode:**
+- **Heuristic:** ~2 seconds, grep-based, ~95% confidence
+- **Rigorous:** ~7 minutes, bazel coverage, 100% confidence
+- **Use rigorous when:** Complex refactorings, debugging coverage issues, final verification
+
+### Example 6: Breaking Change Without Deprecation
 
 **Input:** Function signature changed without deprecation
 

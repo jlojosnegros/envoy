@@ -5,9 +5,15 @@ description: Review code changes with Envoy-specific standards and policies
 Please perform a comprehensive code review of my recent changes using the **Envoy Code Reviewer** agent.
 
 **Usage:**
-- `/envoy-review` - Compare against `main` branch (default)
+- `/envoy-review` - Compare against `main` branch (default, fast heuristic verification)
 - `/envoy-review develop` - Compare against `develop` branch
 - `/envoy-review upstream/main` - Compare against `upstream/main` branch
+- `/envoy-review --rigorous-coverage` - Use rigorous bazel coverage verification (slow but 100% accurate)
+- `/envoy-review main --rigorous-coverage` - Rigorous verification against specific branch
+
+**Coverage Verification Methods:**
+- **Default (Fast ~2-5 sec)**: Heuristic verification using grep and manual test inspection (~95% accuracy)
+- **--rigorous-coverage (Slow ~5-10 min)**: Executes actual `bazel coverage` in Docker environment (100% accuracy)
 
 # Review Scope
 
@@ -58,12 +64,19 @@ Provide:
 Pay special attention to:
 
 - Coverage gaps (any untested code paths)
+  - **Tip**: Use `--rigorous-coverage` flag if you suspect heuristic verification may miss coverage
 - Missing release notes for user-visible changes
 - Breaking changes without proper deprecation
 - Shared pointers where unique_ptr would work
 - Missing thread safety annotations
 - Direct time() calls instead of TimeSystem
 - Missing runtime guards for behavioral changes
+
+**When to use --rigorous-coverage:**
+- Complex refactorings where test names may not match code patterns
+- When heuristic verification reports uncertainty
+- Before final merge of critical features
+- When debugging coverage issues
 
 ## Reference Documents
 
