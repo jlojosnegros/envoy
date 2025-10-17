@@ -32,7 +32,7 @@ changelogs/current.yaml (modified)
 
 ```bash
 # Option 1: Using slash command in Claude Code
-/review
+/envoy-review
 
 # Option 2: Using helper script
 ./scripts/envoy-review-helper.py --format markdown
@@ -128,7 +128,7 @@ vim test/extensions/filters/http/custom_headers/filter_test.cc
 bazel coverage //test/extensions/filters/http/custom_headers:filter_test
 
 # 3. Re-run review
-/review
+/envoy-review
 
 # Output: ✅ All checks passed!
 ```
@@ -201,7 +201,7 @@ vim changelogs/current.yaml
 #     Fixed crash during connection teardown...
 
 # 2. Re-run review
-/review
+/envoy-review
 
 # Output: ✅ All checks passed!
 
@@ -502,23 +502,23 @@ git add .
 git commit -m "feat: add new feature"
 
 # Then run review
-/review
+/envoy-review
 ```
 
 ### 2. Review Early and Often
 ```bash
 # Don't wait until PR is ready - review during development
 git commit -m "wip: partial implementation"
-/review  # Get early feedback
+/envoy-review  # Get early feedback
 ```
 
 ### 3. Iterative Improvements
 ```bash
 # Address issues incrementally
-/review  # Find issues
+/envoy-review  # Find issues
 # Fix issue #1
 git commit --amend
-/review  # Verify fix, find remaining issues
+/envoy-review  # Verify fix, find remaining issues
 # Fix issue #2
 ...
 ```
@@ -541,7 +541,7 @@ git commit --amend
 ### 5. Learn Envoy Standards
 ```bash
 # Use agent to learn Envoy policies
-/review  # Get feedback
+/envoy-review  # Get feedback
 # Read suggested documentation
 # Understand rationale behind policies
 # Apply in future PRs
@@ -555,7 +555,7 @@ git commit --amend
 
 ```bash
 # 1. Agent identifies untested code
-/review  # → "Line 45-67 not tested"
+/envoy-review  # → "Line 45-67 not tested"
 
 # 2. Add test
 vim test/path/to/file_test.cc
@@ -566,28 +566,28 @@ bazel test //test/path/to:file_test
 bazel coverage //test/path/to:file_test
 
 # 4. Confirm
-/review  # → "100% coverage ✅"
+/envoy-review  # → "100% coverage ✅"
 ```
 
 ### Pattern 2: Add Missing Release Note
 
 ```bash
 # 1. Agent detects missing note
-/review  # → "Missing release note"
+/envoy-review  # → "Missing release note"
 
 # 2. Add note
 vim changelogs/current.yaml
 # Add appropriate entry
 
 # 3. Confirm
-/review  # → "Release notes updated ✅"
+/envoy-review  # → "Release notes updated ✅"
 ```
 
 ### Pattern 3: Fix Style Issue
 
 ```bash
 # 1. Agent detects style violation
-/review  # → "shared_ptr should be unique_ptr"
+/envoy-review  # → "shared_ptr should be unique_ptr"
 
 # 2. Fix
 vim source/path/to/file.cc
@@ -597,7 +597,7 @@ vim source/path/to/file.cc
 bazel run //tools/code_format:check_format -- check
 
 # 4. Confirm
-/review  # → "No style issues ✅"
+/envoy-review  # → "No style issues ✅"
 ```
 
 ---

@@ -30,13 +30,14 @@ Please:
 6. Check for common issues (missing runtime guards, thread safety, etc.)
 7. Generate a detailed report with:
    - ❌ Critical issues (must fix before merge)
-   - ⚠️  Warnings (should fix)
+   - ⚠️ Warnings (should fix)
    - 💡 Suggestions (consider)
    - ✅ Passing checks
 
 ## Output Format
 
 Provide:
+
 - Executive summary of changes
 - Detailed issue list with file:line references
 - Specific, actionable fixes for each issue
@@ -46,6 +47,7 @@ Provide:
 ## Focus Areas
 
 Pay special attention to:
+
 - Coverage gaps (any untested code paths)
 - Missing release notes for user-visible changes
 - Breaking changes without proper deprecation
@@ -57,6 +59,7 @@ Pay special attention to:
 ## Reference Documents
 
 Use these for verification:
+
 - `CONTRIBUTING.md` - Contribution guidelines
 - `STYLE.md` - Code style requirements
 - `CLAUDE.md` - Development best practices

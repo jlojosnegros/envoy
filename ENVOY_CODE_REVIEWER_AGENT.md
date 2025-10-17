@@ -31,7 +31,7 @@ Un agente de IA que actúa como **revisor automático de código** con conocimie
 │   └── PROJECT_SUMMARY.md         # Resumen del proyecto
 │
 └── commands/
-    └── review.md                  # Slash command `/review`
+    └── envoy-review.md            # Slash command `/envoy-review`
 
 scripts/
 └── envoy-review-helper.py         # Script Python (450+ líneas)
@@ -86,7 +86,7 @@ tests/
 ### Método 1: Slash Command (Más Fácil)
 
 ```
-/review
+/envoy-review
 ```
 
 ### Método 2: Línea de Comandos
@@ -201,7 +201,7 @@ Estándares más altos → Mejor codebase → Mantenimiento más fácil → Desa
 ```bash
 # Verificar archivos
 ls .claude/agents/code-reviewer.md       # ✅
-ls .claude/commands/review.md            # ✅
+ls .claude/commands/envoy-review.md            # ✅
 ls scripts/envoy-review-helper.py        # ✅
 
 # Test del script
@@ -217,7 +217,7 @@ echo "// test" >> source/common/http/conn_manager_impl.cc
 git commit -am "test: agent review"
 
 # Ejecutar review
-/review
+/envoy-review
 ```
 
 ### 3. Entender el Output
@@ -235,7 +235,7 @@ El agent reporta:
 vim changelogs/current.yaml  # Añadir release note
 
 # Re-review
-/review
+/envoy-review
 
 # Repetir hasta ✅ All checks passed
 ```
@@ -247,7 +247,7 @@ vim changelogs/current.yaml  # Añadir release note
 ### Arquitectura
 
 ```
-User Input (/review)
+User Input (/envoy-review)
     ↓
 Slash Command
     ↓
@@ -315,12 +315,12 @@ Valida:
 git checkout -b test-scenario
 touch source/common/http/new_file.cc
 git add . && git commit -m "test"
-/review  # → Debe detectar test faltante
+/envoy-review  # → Debe detectar test faltante
 
 # Escenario 2: Missing release note
 echo "// feature" >> source/common/http/codec.cc
 git commit -am "feat: new feature"
-/review  # → Debe detectar release note faltante
+/envoy-review  # → Debe detectar release note faltante
 ```
 
 ---
@@ -417,13 +417,13 @@ Métricas Técnicas:
 ### Para Empezar a Usar YA
 
 1. **Leer** → [GETTING_STARTED.md](.claude/agents/GETTING_STARTED.md)
-2. **Probar** → Ejecutar `/review` en un cambio real
+2. **Probar** → Ejecutar `/envoy-review` en un cambio real
 3. **Iterar** → Fix issues y re-review
 4. **Integrar** → Usar en flujo diario de desarrollo
 
 ### Para Presentar en Objetivos
 
-1. **Demostración en vivo** → Mostrar `/review` en acción
+1. **Demostración en vivo** → Mostrar `/envoy-review` en acción
 2. **Métricas** → Comparar antes/después
 3. **Documentación** → Mostrar 5 docs completos
 4. **Código** → Review de implementación técnica
@@ -454,7 +454,7 @@ python3 --version  # Verificar Python 3.7+
 chmod +x scripts/envoy-review-helper.py
 
 # Slash command no responde
-ls .claude/commands/review.md  # Verificar que existe
+ls .claude/commands/envoy-review.md  # Verificar que existe
 
 # No detecta cambios
 git status  # Los cambios deben estar committed
@@ -468,7 +468,7 @@ Antes de presentar, verificar:
 
 - [x] Todos los archivos creados y en su lugar
 - [x] Helper script ejecutable y funcional
-- [x] Slash command `/review` operativo
+- [x] Slash command `/envoy-review` operativo
 - [x] Test scenarios pasan correctamente
 - [x] Documentación completa y clara
 - [x] Ejemplos funcionan como esperado
@@ -497,7 +497,7 @@ Antes de presentar, verificar:
 
 ```bash
 # ¡Empieza a usarlo ahora!
-/review
+/envoy-review
 ```
 
 ---

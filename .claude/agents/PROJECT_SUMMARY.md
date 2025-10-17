@@ -41,8 +41,8 @@ envoy/
    - Output formatting guidelines
    - ~370 lines of specialized instructions
 
-2. **Slash Command** (`.claude/commands/review.md`)
-   - Simple `/review` invocation
+2. **Slash Command** (`.claude/commands/envoy-review.md`)
+   - Simple `/envoy-review` invocation
    - Automatic agent triggering
    - Configurable parameters
 
@@ -115,7 +115,7 @@ Reports include:
 
 ### Method 1: Slash Command (Easiest)
 ```
-/review
+/envoy-review
 ```
 
 ### Method 2: Direct Ask
@@ -210,7 +210,7 @@ Before:
 Developer → Submit PR → Wait 1-2 days → Get feedback → Fix → Repeat
 
 After:
-Developer → /review → Fix issues → Submit PR → Quick human review → Merge
+Developer → /envoy-review → Fix issues → Submit PR → Quick human review → Merge
 ```
 
 ## 🔮 Future Enhancements
@@ -288,7 +288,7 @@ Features Implemented: 10+
 ./tests/ai-review-scenarios/run-all-scenarios.sh  # ✅ All pass
 
 # Test slash command
-/review  # ✅ Invokes agent
+/envoy-review  # ✅ Invokes agent
 
 # Test agent prompt
 # (manual verification through usage)  # ✅ Comprehensive
@@ -303,7 +303,7 @@ echo "// test" >> source/common/http/conn_manager_impl.cc
 git commit -am "test: validation"
 
 # 2. Run review
-/review
+/envoy-review
 
 # 3. Verify output
 # ✅ Detects missing test
@@ -373,7 +373,7 @@ This is a **complete, production-ready** AI code review agent specifically desig
 
 **Status:** ✅ Ready for immediate use
 
-**Next Step:** Run `/review` on your next commit!
+**Next Step:** Run `/envoy-review` on your next commit!
 
 ---
 

@@ -11,7 +11,7 @@ Check that all files are in place:
 ```bash
 # From repository root
 ls -la .claude/agents/code-reviewer.md       # ✅ Agent prompt
-ls -la .claude/commands/review.md            # ✅ Slash command
+ls -la .claude/commands/envoy-review.md            # ✅ Slash command
 ls -la scripts/envoy-review-helper.py        # ✅ Helper script
 ls -la tests/ai-review-scenarios/            # ✅ Test scenarios
 ```
@@ -40,7 +40,7 @@ Expected output:
 Open Claude Code and type:
 
 ```
-/review
+/envoy-review
 ```
 
 The agent will analyze your changes and provide a detailed report!
@@ -69,7 +69,7 @@ git commit -m "test: agent review"
 
 **Option A: In Claude Code**
 ```
-/review
+/envoy-review
 ```
 
 **Option B: Command Line**
@@ -106,7 +106,7 @@ Address each critical issue:
 vim changelogs/current.yaml
 
 # Re-run review
-/review
+/envoy-review
 
 # Iterate until all checks pass
 ```
@@ -126,7 +126,7 @@ vim source/extensions/filters/http/my_filter/filter.cc
 git commit -m "wip: initial implementation"
 
 # 3. Review early (catch issues early!)
-/review
+/envoy-review
 
 # 4. Fix issues
 # (address feedback)
@@ -136,7 +136,7 @@ vim source/extensions/filters/http/my_filter/filter.cc
 git commit -m "feat: complete implementation"
 
 # 6. Final review before PR
-/review
+/envoy-review
 
 # 7. Create PR when clean
 git push origin feature/my-awesome-feature
@@ -152,7 +152,7 @@ Before creating a PR, ensure:
 git status
 
 # ✅ Review passes
-/review
+/envoy-review
 # → No critical issues
 
 # ✅ Tests pass locally
@@ -189,7 +189,7 @@ git checkout -b test-missing-test
 touch source/common/http/new_file.cc
 git add source/common/http/new_file.cc
 git commit -m "test: file without test"
-/review
+/envoy-review
 # → Should detect missing test
 ```
 
@@ -198,7 +198,7 @@ git commit -m "test: file without test"
 git checkout -b test-missing-note
 echo "// feature" >> source/common/http/conn_manager_impl.cc
 git commit -am "feat: new feature"
-/review
+/envoy-review
 # → Should detect missing release note
 ```
 
@@ -206,7 +206,7 @@ git commit -am "feat: new feature"
 ```bash
 git checkout -b test-perfect
 # Make change with test + release note
-/review
+/envoy-review
 # → Should pass all checks ✅
 ```
 
@@ -221,7 +221,7 @@ git checkout -b test-perfect
 # Review during development to catch issues early
 
 git commit -m "wip: partial implementation"
-/review  # ← Get early feedback
+/envoy-review  # ← Get early feedback
 ```
 
 ### Tip 2: Use Helper Script for Quick Checks
@@ -247,7 +247,7 @@ Agent output priorities:
 
 ```bash
 # Use agent to learn Envoy policies
-/review
+/envoy-review
 
 # Read the "why" behind each issue
 # Apply learnings to future code
@@ -258,10 +258,10 @@ Agent output priorities:
 
 ```bash
 # Fast iteration loop:
-/review  # Find issue
+/envoy-review  # Find issue
 # Fix it
 git commit --amend --no-edit
-/review  # Verify fix
+/envoy-review  # Verify fix
 # Repeat
 ```
 
@@ -271,7 +271,7 @@ git commit --amend --no-edit
 
 ### Change Base Branch
 
-Edit `.claude/commands/review.md`:
+Edit `.claude/commands/envoy-review.md`:
 
 ```markdown
 # Default: compares to 'main'
@@ -315,15 +315,15 @@ Add to `.claude/agents/code-reviewer.md`:
 
 ## 🐛 Troubleshooting
 
-### Issue: "/review command not found"
+### Issue: "/envoy-review command not found"
 
 **Solution:**
 ```bash
 # Verify file exists
-ls -la .claude/commands/review.md
+ls -la .claude/commands/envoy-review.md
 
 # Check file permissions
-chmod 644 .claude/commands/review.md
+chmod 644 .claude/commands/envoy-review.md
 ```
 
 ### Issue: "No changes detected"
@@ -335,7 +335,7 @@ git add .
 git commit -m "your message"
 
 # Then run review
-/review
+/envoy-review
 ```
 
 ### Issue: "Helper script fails"
@@ -391,7 +391,7 @@ Iterations to merge: 1-2
 ## 🎓 Learning Path
 
 ### Week 1: Getting Comfortable
-- Run `/review` on every commit
+- Run `/envoy-review` on every commit
 - Understand each issue type
 - Learn to fix common issues
 
@@ -433,14 +433,14 @@ Verify you're ready:
 
 - [ ] All agent files installed
 - [ ] Helper script runs successfully
-- [ ] `/review` command works in Claude Code
+- [ ] `/envoy-review` command works in Claude Code
 - [ ] Test scenarios pass
 - [ ] Understand output format
 - [ ] Know how to fix common issues
 
 **Congratulations!** You're ready to use the Envoy Code Reviewer agent! 🎉
 
-Start with: `/review` on your next commit!
+Start with: `/envoy-review` on your next commit!
 
 ---
 

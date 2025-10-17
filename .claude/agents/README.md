@@ -21,7 +21,7 @@ The Envoy Code Reviewer agent analyzes pull requests and code changes to ensure 
 The easiest way to invoke the agent:
 
 ```
-/review
+/envoy-review
 ```
 
 This will analyze all changes in your current branch compared to `main` and provide a comprehensive review report.
@@ -160,7 +160,7 @@ The agent is configured in `.claude/agents/code-reviewer.md`. You can customize:
 
 ### Slash Command Customization
 
-Edit `.claude/commands/review.md` to customize the slash command behavior:
+Edit `.claude/commands/envoy-review.md` to customize the slash command behavior:
 
 - Change the base branch (default: `main`)
 - Add specific focus areas
@@ -192,7 +192,7 @@ git checkout -b test-code-review
 
 3. Run the review:
 ```bash
-/review
+/envoy-review
 ```
 
 4. Verify expected issues are detected
@@ -207,7 +207,7 @@ git checkout -b test-code-review
 3. Verify format: `bazel run //tools/code_format:check_format -- check`
 
 **Before creating PR:**
-1. Run `/review` to catch issues early
+1. Run `/envoy-review` to catch issues early
 2. Address all critical issues
 3. Consider warnings and suggestions
 4. Ensure release notes are updated
@@ -232,7 +232,7 @@ git checkout -b test-code-review
 ### Agent doesn't detect changes
 
 **Cause:** Not in a git repository or no changes committed
-**Solution:** Commit your changes first, then run `/review`
+**Solution:** Commit your changes first, then run `/envoy-review`
 
 ### False positives
 
@@ -244,19 +244,19 @@ git checkout -b test-code-review
 **Cause:** Python dependencies missing or wrong Python version
 **Solution:** Ensure Python 3.7+ is installed
 
-### No output from /review
+### No output from /envoy-review
 
 **Cause:** Slash command not properly configured
-**Solution:** Verify `.claude/commands/review.md` exists
+**Solution:** Verify `.claude/commands/envoy-review.md` exists
 
 ## 🛠️ Development
 
 ### Architecture
 
 ```
-User Input (/review)
+User Input (/envoy-review)
     ↓
-Slash Command (.claude/commands/review.md)
+Slash Command (.claude/commands/envoy-review.md)
     ↓
 Agent Prompt (.claude/agents/code-reviewer.md)
     ↓
