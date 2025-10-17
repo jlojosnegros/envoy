@@ -177,6 +177,51 @@ class EnvoyReviewer:
         changed_files = self.get_changed_files()
         return 'changelogs/current.yaml' in changed_files
 
+    def verify_code_has_tests(self, filepath: str) -> Tuple[bool, List[str]]:
+        """
+        CRITICAL CHECK: Verify that code in source file actually has test coverage.
+        Returns (has_coverage, list_of_untested_functions)
+        """
+        if not filepath.startswith('source/') or not filepath.endswith('.cc'):
+            return True, []  # Not applicable
+
+        # Find test file
+        test_file = filepath.replace('source/', 'test/', 1).replace('.cc', '_test.cc')
+        test_path = self.repo_path / test_file
+
+        if not test_path.exists():
+            return False, ["Test file does not exist"]
+
+        # Get the diff to see what changed in source
+        stdout, stderr, code = self._run_git_command([
+            "diff", f"{self.base_branch}...HEAD", "--", filepath
+        ])
+
+        if code != 0:
+            return True, []  # Can't verify
+
+        # Look for new/modified function definitions or case statements
+        import re
+        untested = []
+
+        # Check for new enum cases (like NE operator)
+        for line in stdout.split('\n'):
+            if line.startswith('+') and 'case ' in line and '::' in line:
+                # Extract enum value
+                match = re.search(r'case\s+\w+::\w+::(\w+):', line)
+                if match:
+                    enum_val = match.group(1)
+                    # Check if test file mentions this enum
+                    try:
+                        test_content = test_path.read_text(encoding='utf-8', errors='ignore')
+                        if enum_val not in test_content:
+                            untested.append(f"Enum case {enum_val} not found in tests")
+                    except:
+                        pass
+
+        has_coverage = len(untested) == 0
+        return has_coverage, untested
+
     def analyze_file(self, filepath: str) -> FileAnalysis:
         """Analyze a single file for issues."""
         file_type = self.categorize_file(filepath)
@@ -195,6 +240,14 @@ class EnvoyReviewer:
                 issues.append(
                     f"Missing test file: expected {test_path}"
                 )
+            else:
+                # CRITICAL: Verify code actually has test coverage
+                has_coverage, untested = self.verify_code_has_tests(filepath)
+                if not has_coverage:
+                    for problem in untested:
+                        issues.append(
+                            f"CRITICAL: Code without test coverage - {problem}"
+                        )
 
         # Check file-specific patterns
         if file_type == 'source':
@@ -234,6 +287,57 @@ class EnvoyReviewer:
             warnings=warnings
         )
 
+    def check_deleted_tests(self) -> List[str]:
+        """Check if any tests were deleted."""
+        deleted_tests = []
+
+        # Get diff to see deleted lines
+        stdout, stderr, code = self._run_git_command([
+            "diff", f"{self.base_branch}...HEAD"
+        ])
+
+        if code != 0:
+            return deleted_tests
+
+        # Look for deleted TEST_F or TEST( lines
+        in_deleted_test = False
+        test_name = None
+
+        for line in stdout.split('\n'):
+            # Check for deleted test definition
+            if line.startswith('-TEST_F(') or line.startswith('-TEST('):
+                # Extract test name
+                import re
+                match = re.search(r'-TEST(?:_F)?\(([^,]+),\s*([^)]+)\)', line)
+                if match:
+                    test_name = f"{match.group(1)}.{match.group(2)}"
+                    in_deleted_test = True
+            # Check if this is in a test file
+            elif line.startswith('---') and '_test.cc' in line:
+                in_deleted_test = True
+
+        # Also check for net deletions in test files
+        stdout, stderr, code = self._run_git_command([
+            "diff", "--numstat", f"{self.base_branch}...HEAD"
+        ])
+
+        if code == 0:
+            for line in stdout.split('\n'):
+                parts = line.split()
+                if len(parts) >= 3 and '_test.cc' in parts[2]:
+                    try:
+                        added = int(parts[0]) if parts[0] != '-' else 0
+                        removed = int(parts[1]) if parts[1] != '-' else 0
+                        if removed > added:  # Net deletion
+                            deleted_tests.append(
+                                f"Test file {parts[2]} has net deletion: "
+                                f"-{removed} +{added} lines"
+                            )
+                    except ValueError:
+                        pass
+
+        return deleted_tests
+
     def generate_report(self) -> ReviewReport:
         """Generate complete review report."""
         changed_files = self.get_changed_files()
@@ -253,6 +357,15 @@ class EnvoyReviewer:
 
         total_added = 0
         total_removed = 0
+
+        # Check for deleted tests - this is a WARNING (not critical by itself)
+        deleted_tests = self.check_deleted_tests()
+        if deleted_tests:
+            for deleted_test in deleted_tests:
+                all_warnings.append(
+                    f"Test deleted: {deleted_test}. "
+                    "Verify this was intentional and coverage is still 100%."
+                )
 
         # Analyze each file
         for filepath in changed_files:
