@@ -1,0 +1,16 @@
+{
+  "branch": "main",
+  "commit_sha": "f328cf4b6cdd1e5a9e2a68a3f4e8d9c1a2b3c4d5",
+  "timestamp": "2025-01-20T14:30:00Z",
+  "branch_last_commit": "2025-01-20T12:00:00Z",
+  "coverage_summary": {
+    "lines_total": 150000,
+    "lines_covered": 148800,
+    "coverage_percent": 99.2
+  },
+  "metadata": {
+    "generated_by": "envoy-coverage-tracker.py",
+    "repo_path": "/home/user/envoy",
+    "coverage_source": "generated/coverage/coverage.txt"
+  }
+}

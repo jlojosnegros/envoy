@@ -173,10 +173,177 @@ User invokes code review
     |
     ├─ Contains "--rigorous-coverage"?
     |    ├─ YES → Method 2: Run bazel coverage in Docker (slow but 100% accurate)
+    |    |         ↓
+    |    |         Check for historical coverage baseline
+    |    |         ↓
+    |    |         Compare with baseline to detect regressions
+    |    |
     |    └─ NO  → Method 1: Use grep + manual inspection (fast, ~95% accurate)
     |
     └─ Report results
 ```
+
+### Method 3: Historical Coverage Comparison (For Rigorous Mode)
+
+**Purpose:** Detect coverage regressions by comparing against baseline branches
+
+**When rigorous coverage is run (`--rigorous-coverage`), ALSO check:**
+
+1. **Load historical coverage** for base branch (e.g., `main`)
+2. **Compare current coverage** against historical baseline
+3. **Detect regressions** - coverage should NEVER decrease
+
+**How it works:**
+
+```bash
+# Step 1: Check if base branch coverage is cached
+./scripts/envoy-coverage-tracker.py --branch main --check-stale
+
+# Possible outcomes:
+# A) Cache is fresh → Use it for comparison
+# B) Cache is stale → Ask user what to do
+# C) No cache → Inform user, proceed without comparison
+```
+
+**If cache is STALE (base branch has new commits):**
+
+You MUST ask the user:
+
+```
+⚠️  Warning: Cached coverage for 'main' is stale
+    Cached commit: abc123 (3 days ago)
+    Current commit: def456 (now)
+
+Options:
+1. Recalculate 'main' coverage (recommended but slow ~5-10 min)
+2. Use stale cache anyway (fast but may be inaccurate)
+3. Skip baseline comparison (only check current coverage)
+
+What would you like to do?
+```
+
+**If cache is FRESH:**
+
+```bash
+# Step 2: Run coverage on current branch
+./ci/run_envoy_docker.sh 'test/run_envoy_bazel_coverage.sh'
+
+# Step 3: Save current coverage (optional, for later comparison)
+./scripts/envoy-coverage-tracker.py --branch current-branch-name --save
+
+# Step 4: Compare
+./scripts/envoy-coverage-tracker.py --compare-with main
+
+# Example output:
+# 📊 Coverage Comparison:
+#    Base (main): 99.2% @ def456
+#    Current (feature-x): 98.9%
+#    Difference: -0.3%
+#    Assessment: ⚠️ Minor regression
+```
+
+**When to save coverage:**
+
+Save coverage for these branches automatically:
+- ✅ `main` - Always save after running rigorous coverage
+- ✅ `develop` - If used as integration branch
+- ❌ Feature branches - Don't save (temporary)
+
+**Coverage cache location:**
+
+All coverage data stored in `.claude/coverage-cache/`:
+```
+.claude/coverage-cache/
+├── README.md          # Documentation
+├── main.json          # Main branch coverage
+└── develop.json       # Develop branch (if exists)
+```
+
+**Coverage data format:**
+
+Each file contains:
+```json
+{
+  "branch": "main",
+  "commit_sha": "abc123...",
+  "timestamp": "2025-01-20T14:30:00Z",
+  "coverage_summary": {
+    "lines_total": 150000,
+    "lines_covered": 148800,
+    "coverage_percent": 99.2
+  }
+}
+```
+
+**Integration with rigorous coverage workflow:**
+
+```bash
+# Full rigorous coverage workflow
+if [[ $USER_MESSAGE == *"--rigorous-coverage"* ]]; then
+  # Extract base branch (default: main)
+  BASE_BRANCH=$(echo "$USER_MESSAGE" | grep -o '\w\+' | head -2 | tail -1)
+  [[ -z "$BASE_BRANCH" || "$BASE_BRANCH" == "rigorous" ]] && BASE_BRANCH="main"
+
+  # 1. Check for cached baseline
+  CACHE_CHECK=$(./scripts/envoy-coverage-tracker.py --branch "$BASE_BRANCH" --check-stale 2>&1)
+
+  if [[ $? -ne 0 ]]; then
+    # Cache is stale or missing
+    echo "$CACHE_CHECK"
+
+    # Ask user what to do (use AskUserQuestion tool)
+    # ... (see above for options)
+  fi
+
+  # 2. Run coverage on current branch
+  ./ci/run_envoy_docker.sh 'test/run_envoy_bazel_coverage.sh'
+
+  # 3. Save current coverage if this is main/develop
+  CURRENT_BRANCH=$(git branch --show-current)
+  if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "develop" ]]; then
+    ./scripts/envoy-coverage-tracker.py --branch "$CURRENT_BRANCH" --save
+  fi
+
+  # 4. Compare if baseline exists
+  COMPARISON=$(./scripts/envoy-coverage-tracker.py --compare-with "$BASE_BRANCH" 2>&1)
+  if [[ $? -eq 0 ]]; then
+    # Report comparison in review output
+    echo "Coverage Regression Check:"
+    echo "$COMPARISON"
+  fi
+fi
+```
+
+**Reporting coverage comparison:**
+
+Include in your review report:
+
+```markdown
+## 📊 Coverage Analysis
+
+### Current Coverage
+- Total: 98.9%
+- Lines: 148,350 / 150,000
+
+### Baseline Comparison (vs main @ def456)
+- Baseline: 99.2%
+- Difference: -0.3% ⚠️
+- **Assessment: Minor regression detected**
+
+### Action Required
+Your changes have decreased coverage by 0.3%. This is likely due to:
+1. New code without sufficient tests
+2. Deletion of tests
+
+Please add tests to restore coverage to at least 99.2%.
+```
+
+**Important notes:**
+
+- Coverage can NEVER decrease - any regression is a blocker
+- Always inform user when using stale/missing baseline
+- Baseline comparison is OPTIONAL but recommended
+- Don't block on missing baseline - still verify current coverage is 100%
 
 ## Core Requirements You Must Verify
 
