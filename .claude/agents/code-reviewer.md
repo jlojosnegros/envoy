@@ -109,61 +109,395 @@ grep -n "NotEqual\|NE" test/common/access_log/access_log_impl_test.cc
 
 **When to use:** When invoked with `--rigorous-coverage` flag
 
-**Approach:**
-- Execute actual `bazel coverage` on test targets
-- Parse coverage reports (LCOV format)
-- Verify line-by-line coverage of modified source files
-- 100% guaranteed accuracy
+**What it does:**
+- Executes REAL `bazel coverage` in Docker environment
+- Compares current coverage with baseline branch
+- Detects coverage regressions
+- 100% accurate (not heuristic)
 
-**Advantages:**
-- Finds tests regardless of naming
-- Detects dead code in tests (tests that don't execute)
-- Reports exact line-by-line coverage percentages
-- No false negatives
+---
 
-**How to execute (IMPORTANT - Use Docker environment):**
+## 🚨 CRITICAL: Rigorous Coverage Workflow
 
-Envoy's build system is complex. ALWAYS use the Docker wrapper script:
+**When you detect `--rigorous-coverage` flag, follow THIS EXACT WORKFLOW:**
 
-```bash
-# ❌ DON'T: Run bazel coverage directly
-# bazel coverage //test/common/access_log:access_log_impl_test  # May fail due to environment issues
+### Step 1: Ask User for Confirmation
 
-# ✅ DO: Use Docker wrapper script
-./ci/run_envoy_docker.sh 'bazel coverage //test/common/access_log:access_log_impl_test'
+**YOU MUST use AskUserQuestion tool:**
 
-# Coverage report location (inside container, but mapped to host):
-# bazel-out/_coverage/_coverage_report.dat
+```
+⚠️  Rigorous coverage verification will take 5-10 minutes
+
+This will:
+- Execute bazel coverage in Docker (slow)
+- Generate detailed coverage reports
+- Compare with baseline branch coverage
+
+Do you want to proceed?
 ```
 
-**Parse coverage results:**
+**Options to present:**
+1. "Yes, run rigorous coverage" (proceed to Step 2)
+2. "No, use fast heuristic instead" (fallback to Method 1)
+3. "Cancel review" (stop)
+
+**If user selects option 2 (heuristic):**
+- Switch to Method 1 (grep + manual inspection)
+- Inform user: "Using fast heuristic verification (~90% accuracy)"
+- Continue with heuristic review
+
+**If user selects option 3 (cancel):**
+- Stop and inform user they can re-run later
+
+**If user selects option 1 (YES), proceed to Step 2:**
+
+---
+
+### Step 2: Validate Docker/Bazel Environment
+
+**Check if Docker wrapper is available:**
+
 ```bash
-# Generate human-readable coverage report
-./ci/run_envoy_docker.sh 'genhtml bazel-out/_coverage/_coverage_report.dat -o coverage_html'
-
-# Or parse programmatically with lcov
-./ci/run_envoy_docker.sh 'lcov --summary bazel-out/_coverage/_coverage_report.dat'
-```
-
-**When rigorous verification is triggered:**
-- User explicitly passes `--rigorous-coverage` flag
-- Example: `/envoy-review --rigorous-coverage`
-- Example: `/envoy-review main --rigorous-coverage`
-
-**Detection in agent:**
-```bash
-# Check if flag was passed in user message
-if [[ $USER_MESSAGE == *"--rigorous-coverage"* ]]; then
-  # Run rigorous verification
-  for each modified source file:
-    determine test target
-    run: ./ci/run_envoy_docker.sh 'bazel coverage //test/path/to:test_target'
-    parse coverage report
-    verify 100% coverage
-else
-  # Run heuristic verification (default)
-  use grep + manual inspection
+# Test if ci/run_envoy_docker.sh exists and is executable
+if [[ ! -x ./ci/run_envoy_docker.sh ]]; then
+  echo "❌ ERROR: ci/run_envoy_docker.sh not found or not executable"
+  echo "Rigorous coverage requires Docker environment"
+  exit 1
 fi
+
+# Test if docker is running
+if ! ./ci/run_envoy_docker.sh 'echo "Docker OK"' &>/dev/null; then
+  echo "❌ ERROR: Cannot execute Docker commands"
+  echo "Please ensure Docker is installed and running"
+  echo ""
+  echo "To fix:"
+  echo "  - Install Docker: https://docs.docker.com/get-docker/"
+  echo "  - Start Docker daemon"
+  echo "  - Or use fast heuristic: /envoy-review [branch]"
+  exit 1
+fi
+```
+
+**If validation fails:**
+- Report error to user with clear fix instructions
+- STOP - do NOT fallback silently
+- Suggest using heuristic mode instead
+
+**If validation succeeds, proceed to Step 3:**
+
+---
+
+### Step 3: Extract Base Branch Name
+
+```bash
+# Parse user message to extract base branch
+# Examples:
+#   "/envoy-review --rigorous-coverage" → base_branch="main"
+#   "/envoy-review develop --rigorous-coverage" → base_branch="develop"
+#   "/envoy-review code-review-agent --rigorous-coverage" → base_branch="code-review-agent"
+
+# Extract base branch from arguments (before --rigorous-coverage)
+BASE_BRANCH=$(echo "$ARGS" | sed 's/--rigorous-coverage//g' | xargs)
+[[ -z "$BASE_BRANCH" ]] && BASE_BRANCH="main"
+
+echo "📊 Base branch: $BASE_BRANCH"
+echo "📊 Current branch: $(git branch --show-current)"
+```
+
+---
+
+### Step 4: Check Baseline Coverage Cache
+
+```bash
+./scripts/envoy-coverage-tracker.py --branch "$BASE_BRANCH" --check-stale
+CACHE_STATUS=$?
+```
+
+**Possible outcomes:**
+
+#### A) Cache is FRESH (exit code 0)
+```
+✅ Cache is FRESH
+   Coverage: 99.20%
+   Commit: abc123
+   Date: 2025-01-20
+```
+→ Proceed to Step 5 (skip baseline calculation)
+
+#### B) Cache is STALE (exit code 1)
+```
+⚠️ Cache is STALE: Branch has new commits (abc123 → def456)
+```
+
+**YOU MUST ask user using AskUserQuestion:**
+
+```
+⚠️  Baseline coverage cache for '$BASE_BRANCH' is stale
+
+    Cached: abc123 (3 days ago)
+    Current: def456 (now)
+
+What would you like to do?
+```
+
+**Options:**
+1. "Recalculate baseline coverage (adds ~5-10 min)" → Proceed to Step 4.1
+2. "Use stale cache (may be inaccurate)" → Proceed to Step 5
+3. "Skip baseline comparison" → Proceed to Step 5 (no comparison)
+
+#### C) No Cache (exit code 1)
+```
+⚠️ No cache found for branch '$BASE_BRANCH'
+```
+
+**YOU MUST ask user using AskUserQuestion:**
+
+```
+ℹ️  No baseline coverage found for '$BASE_BRANCH'
+
+To detect coverage regressions, we need baseline coverage data.
+
+What would you like to do?
+```
+
+**Options:**
+1. "Calculate baseline coverage now (adds ~5-10 min)" → Proceed to Step 4.1
+2. "Skip baseline comparison (only check current coverage)" → Proceed to Step 5
+
+---
+
+### Step 4.1: Calculate Baseline Coverage (if needed)
+
+**Only execute if user chose to calculate baseline:**
+
+```bash
+echo "📊 Calculating coverage for baseline branch: $BASE_BRANCH"
+echo "⏳ This will take 5-10 minutes..."
+echo ""
+
+# Checkout baseline branch
+CURRENT_BRANCH=$(git branch --show-current)
+git checkout "$BASE_BRANCH"
+
+# Run coverage
+./ci/run_envoy_docker.sh 'test/run_envoy_bazel_coverage.sh'
+
+if [[ $? -ne 0 ]]; then
+  echo "❌ ERROR: Coverage calculation failed for $BASE_BRANCH"
+  git checkout "$CURRENT_BRANCH"
+  exit 1
+fi
+
+# Save to cache
+./scripts/envoy-coverage-tracker.py --branch "$BASE_BRANCH" --save
+
+if [[ $? -eq 0 ]]; then
+  echo "✅ Baseline coverage saved to cache"
+else
+  echo "⚠️  Warning: Could not save to cache, but continuing..."
+fi
+
+# Return to current branch
+git checkout "$CURRENT_BRANCH"
+```
+
+---
+
+### Step 5: Calculate Current Branch Coverage
+
+```bash
+echo "📊 Calculating coverage for current branch: $(git branch --show-current)"
+echo "⏳ This will take 5-10 minutes..."
+echo ""
+
+# Run coverage
+./ci/run_envoy_docker.sh 'test/run_envoy_bazel_coverage.sh'
+
+if [[ $? -ne 0 ]]; then
+  echo "❌ ERROR: Coverage calculation failed"
+  echo ""
+  echo "Common issues:"
+  echo "  - Tests failing"
+  echo "  - Docker out of memory"
+  echo "  - Build errors"
+  echo ""
+  echo "Try running manually:"
+  echo "  ./ci/run_envoy_docker.sh 'test/run_envoy_bazel_coverage.sh'"
+  exit 1
+fi
+
+echo "✅ Coverage calculation complete"
+echo ""
+
+# Check if coverage report was generated
+if [[ ! -f generated/coverage/coverage.txt ]]; then
+  echo "❌ ERROR: Coverage report not found at generated/coverage/coverage.txt"
+  exit 1
+fi
+
+# Parse current coverage
+CURRENT_COVERAGE=$(grep -oP 'TOTAL.*\K\d+\.\d+(?=%)' generated/coverage/coverage.txt || echo "unknown")
+echo "📊 Current branch coverage: $CURRENT_COVERAGE%"
+```
+
+---
+
+### Step 6: Save Current Coverage to Cache (Optional)
+
+```bash
+# Only save if this is main, develop, or other long-lived branch
+CURRENT_BRANCH=$(git branch --show-current)
+
+if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "develop" ]]; then
+  echo "💾 Saving coverage to cache for future comparisons..."
+  ./scripts/envoy-coverage-tracker.py --branch "$CURRENT_BRANCH" --save
+
+  if [[ $? -eq 0 ]]; then
+    echo "✅ Coverage cached for $CURRENT_BRANCH"
+  fi
+fi
+```
+
+---
+
+### Step 7: Compare with Baseline (if available)
+
+```bash
+# Check if baseline exists (either from cache or just calculated)
+./scripts/envoy-coverage-tracker.py --branch "$BASE_BRANCH" --summary &>/dev/null
+
+if [[ $? -eq 0 ]]; then
+  echo ""
+  echo "📊 Comparing coverage with baseline..."
+  echo ""
+
+  # Run comparison
+  ./scripts/envoy-coverage-tracker.py --compare-with "$BASE_BRANCH"
+  COMPARISON_EXIT=$?
+
+  # Display results
+  # Exit code 0 = no regression
+  # Exit code 1 = regression detected
+
+  if [[ $COMPARISON_EXIT -eq 1 ]]; then
+    echo ""
+    echo "❌ COVERAGE REGRESSION DETECTED"
+    echo "Your changes have decreased overall coverage"
+    echo "This is a blocking issue - please add tests"
+  fi
+else
+  echo ""
+  echo "ℹ️  No baseline available for comparison"
+  echo "Coverage verified: $CURRENT_COVERAGE%"
+fi
+```
+
+---
+
+### Step 8: Generate Detailed Report
+
+**Include in your final review report:**
+
+```markdown
+## 📊 Coverage Analysis (Rigorous - Bazel)
+
+### Current Branch Coverage
+- **Total:** $CURRENT_COVERAGE%
+- **Lines:** X,XXX / Y,YYY
+- **Report:** generated/coverage/coverage.html
+
+### Baseline Comparison (vs $BASE_BRANCH)
+- **Baseline:** $BASELINE_COVERAGE% @ $BASELINE_COMMIT
+- **Difference:** ±X.X%
+- **Assessment:** [✅ No regression | ⚠️ Minor regression | ❌ Major regression]
+
+### Modified Files Coverage
+[List each modified source file with its coverage %]
+- source/common/access_log/access_log_impl.cc: 100%
+- [other files...]
+
+### Uncovered Lines
+[If any lines are uncovered, list them with file:line]
+- source/file.cc:123-125 (3 lines uncovered)
+```
+
+---
+
+## 🔄 Complete Workflow Summary
+
+```
+User runs: /envoy-review code-review-agent --rigorous-coverage
+
+1. Ask user: "Run rigorous coverage (5-10 min)?"
+   ├─ YES → Continue
+   ├─ Use heuristic → Switch to Method 1
+   └─ Cancel → Stop
+
+2. Validate Docker/Bazel
+   ├─ OK → Continue
+   └─ FAIL → Error + exit
+
+3. Check baseline cache for 'code-review-agent'
+   ├─ FRESH → Use it
+   ├─ STALE → Ask: Recalculate? Use stale? Skip?
+   └─ MISSING → Ask: Calculate? Skip?
+
+4. [If needed] Calculate baseline coverage
+   └─ git checkout code-review-agent
+   └─ Run bazel coverage
+   └─ Save to cache
+   └─ git checkout [original branch]
+
+5. Calculate current branch coverage
+   └─ Run bazel coverage
+   └─ Parse results
+
+6. [Optional] Save current to cache (if main/develop)
+
+7. Compare current vs baseline
+   └─ Show diff
+   └─ Flag regressions
+
+8. Generate detailed report
+   └─ Include all coverage stats
+   └─ Include comparison
+   └─ Include action items
+```
+
+---
+
+## ⚠️ IMPORTANT RULES
+
+1. **NEVER** run bazel coverage without asking user first
+2. **NEVER** fallback to heuristic silently when rigorous is requested
+3. **ALWAYS** validate Docker before attempting coverage
+4. **ALWAYS** ask user what to do if cache is stale
+5. **ALWAYS** inform user about time estimates (5-10 min)
+6. **ALWAYS** save baseline to cache after calculating
+7. **NEVER** skip error handling - report errors clearly
+
+---
+
+## 🛠️ Commands Reference
+
+```bash
+# Validate Docker
+./ci/run_envoy_docker.sh 'echo "OK"'
+
+# Run coverage (full)
+./ci/run_envoy_docker.sh 'test/run_envoy_bazel_coverage.sh'
+
+# Check cache status
+./scripts/envoy-coverage-tracker.py --branch main --check-stale
+
+# Save coverage
+./scripts/envoy-coverage-tracker.py --branch main --save
+
+# Compare coverage
+./scripts/envoy-coverage-tracker.py --compare-with main
+
+# View summary
+./scripts/envoy-coverage-tracker.py --branch main --summary
 ```
 
 ### Coverage Verification Decision Tree
