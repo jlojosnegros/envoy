@@ -681,7 +681,15 @@ Please add tests to restore coverage to at least 99.2%.
 
 ## Core Requirements You Must Verify
 
+**Reference documents:**
+- CONTRIBUTING.md - Main contribution guidelines
+- STYLE.md - C++ coding style requirements
+- EXTENSION_POLICY.md - Extension addition/removal policies
+- API_VERSIONING.md - API versioning guidelines
+
 ### 0. 🎨 Code Format Compliance (CRITICAL - MANDATORY CHECK)
+
+**Source:** STYLE.md, CONTRIBUTING.md
 
 **Every code review MUST start with format validation.**
 
@@ -855,33 +863,53 @@ deprecated:
 
 ### 3. 🎨 Code Style & Standards
 
-Verify compliance with Envoy C++ style (see STYLE.md):
+**Source:** STYLE.md, CONTRIBUTING.md
 
-**Naming conventions:**
+Verify compliance with Envoy C++ style:
+
+**Naming conventions (STYLE.md):**
 - Functions: `camelCase` starting lowercase (e.g., `doSomething()`)
-- Member variables: `snake_case_` with trailing underscore (e.g., `my_var_`)
-- Enums: `PascalCase` (e.g., `ConnectionState`)
-- Constants: `PascalCase` or `UPPER_SNAKE_CASE`
+- Member variables: `_` postfix (e.g., `int foo_`)
+- Enums: `PascalCase` (e.g., `RoundRobin`)
+- Constants: `PascalCase` or `UPPER_SNAKE_CASE` (latter only if globally significant)
+- TODOs: Use GitHub name (e.g., `// TODO(username): blah`)
 
-**Smart pointers:**
+**Smart pointers (STYLE.md):**
 - Prefer `unique_ptr` over `shared_ptr`
 - Type aliases: `using FooPtr = std::unique_ptr<Foo>;`
 - Use references when pointer cannot be null
+- Move semantics: use `&&` (e.g., `void onHeaders(Http::HeaderMapPtr&& headers)`)
 
-**Error handling:**
+**Error handling (STYLE.md):**
 - `RELEASE_ASSERT()` for fatal, unrecoverable errors
 - `ASSERT()` for debug-only invariant checks
 - `ENVOY_BUG()` for detectable violations in production
 - Handle errors from untrusted sources gracefully
+- Check all error code returns
 
-**Thread safety:**
+**Thread safety (STYLE.md):**
 - Use `ABSL_GUARDED_BY` annotations
 - No direct `time()` calls - use `TimeSystem`
 - Proper locking for shared state
 
+**Documentation (STYLE.md):**
+- API-level comments: Doxygen format with `@param` and `@return`
+- Header guards: `#pragma once`
+- All code inside `Envoy` namespace
+
+**Other style requirements:**
+- 100 columns line limit
+- Braces required for all control statements
+- StrictMock by default in tests
+- Anonymous namespaces for file-local functions (not `static`)
+
+**Inclusive language (CONTRIBUTING.md):**
+- ❌ FORBIDDEN: whitelist, blacklist, master, slave
+- ✅ USE: allowlist, denylist/blocklist, primary/main, secondary/replica
+
 **Check style:**
 ```bash
-bazel run //tools/code_format:check_format -- check
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
 ```
 
 ### 4. 🔧 Build System Compliance
@@ -942,12 +970,15 @@ Register in `source/common/runtime/runtime_features.cc`
 
 ### 7. 🧪 Test Quality
 
+**Source:** CONTRIBUTING.md, STYLE.md
+
 **Unit tests must:**
 - Cover all new functions/methods
 - Test error paths and edge cases
-- Use proper mocking (prefer `StrictMock`)
+- Use proper mocking (prefer `StrictMock` - STYLE.md)
 - Be hermetic (no hardcoded ports, use port 0)
 - Be deterministic (use `SimulatedTimeSystem`, not real time)
+- Use `DEPRECATED_FEATURE_TEST()` for deprecated config tests (CONTRIBUTING.md)
 
 **Integration tests needed for:**
 - End-to-end flows
@@ -960,6 +991,156 @@ TEST_F(MyClassTest, MethodNameHandlesErrorCase) {
   // Descriptive test name showing what's tested
 }
 ```
+
+**Runtime guarded features (CONTRIBUTING.md):**
+- Must have 100% coverage for BOTH old and new code paths
+- Test with feature defaulting true AND false
+- See [testing runtime features](https://github.com/envoyproxy/envoy/blob/main/test/integration/README.md)
+
+### 8. 📝 PR Quality Requirements
+
+**Source:** CONTRIBUTING.md
+
+**PR Title (REQUIRED):**
+- Must be descriptive
+- Start with subsystem name followed by colon
+- Examples: "docs: fix grammar error", "http conn man: add new feature"
+
+**PR Description (REQUIRED):**
+- Must have details on what the PR does
+- If fixes issue: end with "Fixes #XXX"
+- If co-authored: include `Co-authored-by: name <name@example.com>`
+
+**Commit Message (REQUIRED):**
+- Will be used as final commit message
+- Update if PR diverges during review
+- Must be descriptive and clear
+
+**Comments and Documentation (REQUIRED):**
+- All comments must have proper English grammar and punctuation
+- Code comments where logic is complex
+- Documentation for user-facing changes
+
+**If PR deprecates a feature (CRITICAL):**
+- Commit message MUST mention what has been deprecated
+- Version history (`changelogs/current.yaml`) must be updated with RST links
+- Must follow deprecation policy (see Breaking Changes section)
+
+### 9. 🚫 Inclusive Language Policy
+
+**Source:** CONTRIBUTING.md
+
+**FORBIDDEN words/phrases - must flag if found:**
+- ❌ "whitelist" → use "allowlist"
+- ❌ "blacklist" → use "denylist" or "blocklist"
+- ❌ "master" → use "primary" or "main"
+- ❌ "slave" → use "secondary" or "replica"
+
+**Verification:**
+```bash
+# Check for forbidden terms in modified files
+git diff main...HEAD | grep -iE "(whitelist|blacklist|master|slave)"
+```
+
+**Action if found:**
+- Report as CRITICAL issue
+- Provide specific replacement for each occurrence
+- Reference CONTRIBUTING.md inclusive language policy
+
+### 10. 🔌 Extension-Specific Checks
+
+**Source:** EXTENSION_POLICY.md, CONTRIBUTING.md
+
+**If PR adds a new extension, verify:**
+
+1. **Extension registration (REQUIRED):**
+   - Added to `source/extensions/extensions_build_config.bzl` or `all_extensions.bzl`
+   - Factory class implements correct interface
+   - Proper namespace: `Envoy::Extensions::{Category}::{Name}`
+
+2. **Security posture declared (REQUIRED):**
+   - `status`: stable / alpha / wip
+   - `security_posture`: must be one of:
+     - `robust_to_untrusted_downstream`
+     - `robust_to_untrusted_downstream_and_upstream`
+     - `requires_trusted_downstream_and_upstream`
+     - `data_plane_agnostic`
+
+3. **Sponsorship (REQUIRED - informational):**
+   - Extension must be sponsored by an existing maintainer
+   - Inform user if unclear who the sponsor is
+
+4. **Reviewers (REQUIRED - informational):**
+   - At least two reviewers must be proposed
+   - Will be added to CODEOWNERS file
+
+5. **Cross-company approval (if new extension):**
+   - At least one approver from different organization than PR author
+   - E.g., if Lyft authors PR, need non-Lyft approver
+
+6. **Dependencies (REQUIRED):**
+   - New dependencies must comply with DEPENDENCY_POLICY.md
+   - Check for new external dependencies
+
+7. **Platform-specific features:**
+   - If extension depends on platform-specific functionality
+   - Must be guarded in build system
+   - Added to `*_SKIP_TARGETS` in `bazel/repositories.bzl`
+
+**For contrib extensions:**
+- API files in `api/contrib/envoy/`
+- Build config in `contrib/contrib_build_config.bzl`
+- Metadata in `contrib/extensions_metadata.yaml`
+- Entrypoint in `docs/root/api-v3/config/contrib/contrib.rst`
+
+### 11. 🔄 Runtime Guarding
+
+**Source:** CONTRIBUTING.md
+
+**If PR is a high-risk behavioral change, check for runtime guard:**
+
+**Canonical pattern:**
+```cpp
+if (Runtime::runtimeFeatureEnabled("envoy.reloadable_features.my_feature_name")) {
+  [new code path]
+} else {
+  [old_code_path]
+}
+```
+
+**Requirements:**
+- Features with `envoy.reloadable_features.` prefix must be safe to flip at runtime
+- Both old and new paths must have 100% test coverage
+- Release notes must explain how to revert the behavior
+
+**What merits runtime guarding:**
+- Major refactors (e.g., buffer implementation changes)
+- User-visible changes to protocol processing
+- Changes to HTTP headers or HTTP serialization
+- High-risk behavioral changes
+
+**Release notes format for runtime guarded features:**
+```yaml
+- area: config
+  change: |
+    [Description of change]. This behavioral change can be temporarily
+    reverted by setting runtime guard ``envoy.reloadable_features.feature_name`` to false.
+```
+
+### 12. 🔍 Additional CONTRIBUTING.md Checks
+
+**LOC threshold for "major feature" (CONTRIBUTING.md):**
+- If PR > 100 LOC altered (not including tests), should have GitHub issue
+- Check if PR changes user-facing behavior without prior discussion
+
+**Git commit requirements:**
+- DCO sign-off present: `Signed-off-by: Name <email>`
+- Proper attribution for co-authors
+
+**Extension removal (informational):**
+- If PR deprecates extension: 6 month deprecation interval required
+- Must emit deprecation warning
+- Must post to envoy-announce mailing list
 
 ## Analysis Workflow
 
