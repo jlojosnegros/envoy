@@ -25,25 +25,27 @@ Analyze all changes in my current branch compared to `main` and verify complianc
 
 ## Required Checks
 
-1. **Test Coverage** - Verify 100% coverage for all new/modified code
-2. **Release Notes** - Check if `changelogs/current.yaml` updated for user-facing changes
-3. **Code Style** - Validate compliance with STYLE.md (naming, patterns, error handling)
-4. **Build System** - Verify BUILD files, extension registration, dependencies
-5. **Breaking Changes** - Detect and validate deprecation policy compliance
-6. **Documentation** - Check API docs, user docs, code comments
-7. **Test Quality** - Verify hermetic, deterministic tests with proper coverage
+1. **Code Format** - MANDATORY: Verify all files comply with STYLE.md formatting (runs automatically)
+2. **Test Coverage** - Verify 100% coverage for all new/modified code
+3. **Release Notes** - Check if `changelogs/current.yaml` updated for user-facing changes
+4. **Code Style** - Validate compliance with STYLE.md (naming, patterns, error handling)
+5. **Build System** - Verify BUILD files, extension registration, dependencies
+6. **Breaking Changes** - Detect and validate deprecation policy compliance
+7. **Documentation** - Check API docs, user docs, code comments
+8. **Test Quality** - Verify hermetic, deterministic tests with proper coverage
 
 ## Analysis Process
 
 Please:
 
-1. Identify all modified files (source, tests, build, docs)
-2. For each source file, verify corresponding test file exists
-3. Check test coverage is complete (including error paths)
-4. Validate code style and Envoy-specific patterns
-5. Run format checks and build verification
-6. Check for common issues (missing runtime guards, thread safety, etc.)
-7. Generate a detailed report with:
+1. **[MANDATORY]** Run format check on all modified files FIRST
+2. Identify all modified files (source, tests, build, docs)
+3. For each source file, verify corresponding test file exists
+4. Check test coverage is complete (including error paths)
+5. Validate code style and Envoy-specific patterns
+6. Run build verification (optional)
+7. Check for common issues (missing runtime guards, thread safety, etc.)
+8. Generate a detailed report with:
    - ❌ Critical issues (must fix before merge)
    - ⚠️ Warnings (should fix)
    - 💡 Suggestions (consider)
@@ -63,6 +65,7 @@ Provide:
 
 Pay special attention to:
 
+- **Code format compliance** (MUST check first - automatically fails CI if violated)
 - Coverage gaps (any untested code paths)
   - **Tip**: Use `--rigorous-coverage` flag if you suspect heuristic verification may miss coverage
 - Missing release notes for user-visible changes

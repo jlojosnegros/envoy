@@ -681,6 +681,78 @@ Please add tests to restore coverage to at least 99.2%.
 
 ## Core Requirements You Must Verify
 
+### 0. 🎨 Code Format Compliance (CRITICAL - MANDATORY CHECK)
+
+**Every code review MUST start with format validation.**
+
+**Priority:** HIGHEST - Run this check BEFORE all other checks
+
+**Why format compliance is CRITICAL:**
+- Format violations BLOCK CI/CD pipeline
+- Same severity as missing tests
+- Non-negotiable requirement for merge
+- Wastes reviewer time if not fixed early
+
+**🚨 CRITICAL: Always Use Docker Wrapper**
+
+**YOU MUST use `./ci/run_envoy_docker.sh` for ALL bazel/format commands.**
+- ❌ NEVER run `bazel` commands directly (they may fail due to missing dependencies)
+- ✅ ALWAYS use `./ci/run_envoy_docker.sh` wrapper (guarantees correct environment)
+
+**Why Docker wrapper is MANDATORY:**
+- Ensures correct clang-format version (matches CI exactly)
+- Provides all required dependencies
+- Eliminates environment issues
+- Matches production CI behavior exactly
+- Direct bazel commands WILL FAIL without proper setup
+
+**Mandatory steps:**
+
+1. **Run format check on EVERY review (MUST use Docker wrapper):**
+   ```bash
+   # CORRECT - Use Docker wrapper
+   ./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+
+   # ❌ WRONG - Direct bazel command (will likely fail)
+   # bazel run //tools/code_format:check_format -- check
+   ```
+
+2. **If violations detected:**
+   - Report as CRITICAL issue
+   - List exact files with violations
+   - Provide fix commands (see below)
+   - Mark as BLOCKING in action items
+
+3. **Fix commands to provide (ALWAYS with Docker wrapper):**
+   ```bash
+   # ONLY CORRECT METHOD: Use Docker wrapper
+   ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+
+   # Verify fix worked (also with Docker wrapper)
+   ./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+   ```
+
+4. **Report format status in summary:**
+   ```markdown
+   ## 📊 Summary
+   - **Format check:** ✅ PASS / ❌ FAIL (N files with violations)
+   ```
+
+**Common format violations to identify:**
+- Incorrect indentation (must be 2 spaces)
+- Line length > 100 characters
+- Missing spaces after control keywords (`if`, `for`, `while`)
+- Trailing whitespace
+- Missing newline at end of file
+- Incorrect pointer/reference alignment
+- Incorrect brace placement
+
+**Severity:** ❌ CRITICAL
+**Action:** Must fix before merge
+**Verification:** Exit code of `bazel run //tools/code_format:check_format -- check` must be 0
+
+---
+
 ### 1. 🎯 Test Coverage (CRITICAL - 100% Required)
 
 Envoy **requires 100% test coverage** for all new code. This is the MOST IMPORTANT check.
@@ -1010,17 +1082,268 @@ Before marking coverage as ✅:
 
 ### Step 3: Run Automated Checks
 
+**🚨 CRITICAL: ALWAYS Use Docker Wrapper for Bazel Commands**
+
+**YOU MUST use `./ci/run_envoy_docker.sh` for ALL bazel/format commands.**
+- ❌ NEVER run `bazel` directly - will fail without proper environment
+- ✅ ALWAYS use Docker wrapper - guarantees correct environment
+
 **Default (Heuristic) - Always run these:**
 ```bash
-# 1. Format check
-bazel run //tools/code_format:check_format -- check
+# 1. Format check (MANDATORY - MUST RUN ON ALL REVIEWS with Docker wrapper)
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
 
 # 2. Build the modified targets (optional, CI will do this)
-bazel build //path/to:target
+# If needed: ./ci/run_envoy_docker.sh 'bazel build //path/to:target'
 
 # 3. Run tests (optional, CI will do this)
-bazel test //path/to:test_target
+# If needed: ./ci/run_envoy_docker.sh 'bazel test //path/to:test_target'
 ```
+
+### 🚨 CRITICAL: Format Validation Protocol
+
+**YOU MUST run format checks on EVERY review, no exceptions.**
+**YOU MUST use Docker wrapper for ALL format commands.**
+
+#### Step 3.1: Run Format Check
+
+```bash
+# CORRECT - Use Docker wrapper (ONLY VALID METHOD)
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+
+# ❌ WRONG - Direct bazel command (WILL FAIL)
+# bazel run //tools/code_format:check_format -- check
+```
+
+**Parse the output carefully:**
+- Exit code 0 → All files comply with format standards ✅
+- Exit code non-zero → Format violations detected ❌
+
+**If format violations detected:**
+
+1. **Capture the exact files that failed:**
+   ```bash
+   # The output will list specific files with violations
+   # Example output:
+   # source/common/http/codec_impl.cc: formatting issues detected
+   # include/envoy/http/codec.h: formatting issues detected
+   ```
+
+2. **YOU MUST report these files in your review:**
+   ```markdown
+   ## ❌ Critical Issues
+
+   ### 1. 🎨 Format Violations Detected
+
+   **Files with format issues:**
+   - `source/common/http/codec_impl.cc`
+   - `include/envoy/http/codec.h`
+
+   **Issue:** These files do not comply with Envoy's code formatting standards (STYLE.md)
+
+   **Why this is CRITICAL:**
+   - Format violations will fail CI checks
+   - Cannot merge until format is fixed
+   - Violates project contribution guidelines
+
+   **How to fix:**
+
+   **ONLY CORRECT METHOD: Use Docker wrapper**
+   ```bash
+   # Fix format automatically (ONLY VALID COMMAND)
+   ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+
+   # Then verify the fix worked
+   ./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+   ```
+
+   **⚠️ IMPORTANT:**
+   - ❌ DO NOT use direct `bazel` commands (they will fail)
+   - ❌ DO NOT use `clang-format` directly (wrong version)
+   - ✅ ALWAYS use `./ci/run_envoy_docker.sh` wrapper
+
+   **After fixing:**
+   ```bash
+   # Stage the formatting changes
+   git add -u
+
+   # Commit the format fixes
+   git commit -m "style: fix code formatting
+
+   Applied clang-format to comply with STYLE.md
+   "
+
+   # Verify format is correct
+   ./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+   ```
+   ```
+
+#### Step 3.2: Detailed Format Analysis
+
+**If format check fails, you can analyze what the output shows.**
+
+**Note:** The `check_format` command will show which files have violations.
+The Docker wrapper output will indicate which files need formatting.
+
+**Common format violations:**
+- Incorrect indentation (should be 2 spaces)
+- Line length > 100 characters
+- Missing space after control keywords (if, for, while)
+- Incorrect brace placement
+- Missing newline at end of file
+- Trailing whitespace
+- Incorrect pointer/reference alignment (`int* foo` vs `int *foo`)
+
+**Report specifics in your review:**
+
+```markdown
+### Format Violation Details
+
+**Files reported by format check:**
+- `source/common/http/codec_impl.cc`
+- `include/envoy/http/codec.h`
+
+**Common violations include:**
+- Line length > 100 characters
+- Missing spaces after control keywords ('if', 'for', 'while')
+- Trailing whitespace
+- Incorrect indentation (must be 2 spaces)
+
+**Fix command:**
+```bash
+./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+```
+```
+
+#### Step 3.3: Verify Format Compliance
+
+**ALWAYS verify format compliance BEFORE proceeding with the rest of the review.**
+
+```bash
+# Run format check (MUST use Docker wrapper)
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+EXIT_CODE=$?
+
+if [[ $EXIT_CODE -eq 0 ]]; then
+  echo "✅ Format check PASSED - all files comply with STYLE.md"
+else
+  echo "❌ Format check FAILED - violations detected"
+  echo ""
+  echo "Files with format issues must be fixed before merge."
+  echo ""
+  echo "Run this to fix automatically:"
+  echo "  ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'"
+fi
+```
+
+**Include format status in your review summary:**
+
+```markdown
+## 📊 Summary
+- **Files changed:** X source, Y test, Z build, W docs
+- **Lines modified:** +XXX / -YYY
+- **Format check:** ✅ PASS / ❌ FAIL (N files with violations)
+- **Coverage verification method:** HEURISTIC (fast) / RIGOROUS (bazel coverage)
+- **Coverage:** XX% (need 100%)
+- **Build status:** ✅ PASS / ❌ FAIL / ⏭️ SKIPPED
+- **Tests status:** ✅ PASS / ❌ FAIL / ⏭️ SKIPPED
+```
+
+#### Step 3.4: Format Check Priority
+
+**Format violations are CRITICAL issues:**
+- Same severity as missing tests
+- Must be fixed before merge
+- Will block CI/CD pipeline
+- Non-negotiable requirement
+
+**Always include format fixes in action items:**
+
+```markdown
+## 📝 Action Items
+
+**Before merging, please:**
+
+1. [ ] 🎨 Fix format violations in 2 files (BLOCKING)
+2. [ ] Add test for `Foo::handleError()` in `test/common/foo_test.cc`
+3. [ ] Update `changelogs/current.yaml` with release note
+
+**Commands to run:**
+```bash
+# 1. Fix format (MUST DO FIRST - use Docker wrapper)
+./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+
+# 2. Verify format is fixed
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+
+# 3. Commit the format fixes
+git add -u
+git commit -m "style: fix code formatting"
+
+# 4. Continue with other fixes...
+```
+```
+
+#### Step 3.5: Docker Wrapper Usage (MANDATORY)
+
+**🚨 CRITICAL: You MUST ALWAYS use Docker wrapper for format commands.**
+
+```bash
+# Format check (ONLY VALID METHOD)
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+
+# Format fix (ONLY VALID METHOD)
+./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+```
+
+**Why Docker wrapper is MANDATORY (not optional):**
+- ✅ Uses exact same clang-format version as CI
+- ✅ Provides all required dependencies automatically
+- ✅ Eliminates "works on my machine" issues
+- ✅ Matches production CI behavior exactly
+- ❌ Direct bazel commands WILL FAIL without proper setup
+- ❌ Local clang-format may be wrong version
+
+**NEVER suggest these (they will fail):**
+- ❌ `bazel run //tools/code_format:check_format`
+- ❌ `bazel run //tools/code_format:fix_format`
+- ❌ `clang-format -i file.cc`
+
+**Report Docker usage in review:**
+
+```markdown
+### Format Verification Method
+
+**Environment:** Docker (ci/run_envoy_docker.sh)
+**Tool:** clang-format via do_ci.sh
+**Consistency:** ✅ Matches CI environment exactly (MANDATORY approach)
+```
+
+#### Format Check Decision Tree
+
+```
+Every code review starts here
+    ↓
+Run format check: ./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+    ↓
+    ├─ Exit code 0 (PASS) → ✅ Continue with rest of review
+    |
+    └─ Exit code ≠ 0 (FAIL) → ❌ Format violations detected
+         ↓
+         Identify violating files from output
+         ↓
+         Report as CRITICAL issue in review
+         ↓
+         Provide ONLY VALID fix command:
+         1. ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+         2. git add -u && git commit -m "style: fix formatting"
+         ↓
+         Mark as BLOCKING action item
+         ↓
+         Continue with rest of review (but format fix is REQUIRED)
+```
+
+**🚨 REMINDER: NEVER suggest direct bazel or clang-format commands - they will fail!**
 
 **Rigorous Coverage (Only if --rigorous-coverage flag present):**
 
@@ -1540,7 +1863,133 @@ new_features:
 - **Rigorous:** ~7 minutes, bazel coverage, 100% confidence
 - **Use rigorous when:** Complex refactorings, debugging coverage issues, final verification
 
-### Example 6: Breaking Change Without Deprecation
+### Example 6: Format Violations Detected
+
+**Input:** Code modified but format check fails
+
+**Execution:**
+```bash
+# Agent runs format check with Docker wrapper
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+# Exit code: 1 (violations detected)
+```
+
+**Output:**
+```markdown
+## 📊 Summary
+- **Files changed:** 3 source, 2 test, 1 build
+- **Lines modified:** +127 / -45
+- **Format check:** ❌ FAIL (3 files with violations)
+- **Coverage verification method:** HEURISTIC (fast)
+- **Coverage:** 100% ✅
+- **Build status:** ⏭️ SKIPPED
+- **Tests status:** ⏭️ SKIPPED
+
+---
+
+## ❌ Critical Issues
+
+### 1. 🎨 Format Violations Detected
+
+**Files with format issues:**
+- `source/common/http/codec_impl.cc`
+- `source/extensions/filters/http/my_filter/filter.cc`
+- `include/envoy/http/codec.h`
+
+**Issue:** These files do not comply with Envoy's code formatting standards (STYLE.md)
+
+**Format check command used:**
+```bash
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+```
+
+**Why this is CRITICAL:**
+- Format violations will **fail CI checks**
+- **Cannot merge** until format is fixed
+- Violates project contribution guidelines (CONTRIBUTING.md)
+- Blocks pipeline and wastes reviewer time
+
+**How to fix:**
+
+**ONLY VALID METHOD: Use Docker wrapper**
+```bash
+# Fix format automatically (ONLY CORRECT COMMAND)
+./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+
+# Then verify the fix worked
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+```
+
+**⚠️ CRITICAL - DO NOT USE THESE (they will fail):**
+- ❌ `bazel run //tools/code_format:fix_format` - Missing dependencies
+- ❌ `clang-format -i file.cc` - Wrong clang-format version
+- ❌ Any direct bazel command - Requires specific environment
+
+**After fixing:**
+```bash
+# Stage the formatting changes
+git add -u
+
+# Commit the format fixes separately
+git commit -m "style: fix code formatting
+
+Applied clang-format to comply with STYLE.md
+
+Fixed formatting in:
+- source/common/http/codec_impl.cc
+- source/extensions/filters/http/my_filter/filter.cc
+- include/envoy/http/codec.h
+"
+
+# Verify format is now correct (use Docker wrapper)
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+```
+
+---
+
+## 📝 Action Items
+
+**Before merging, please (in order):**
+
+1. [ ] 🎨 **Fix format violations in 3 files** (BLOCKING - do this FIRST)
+2. [ ] Verify format check passes
+3. [ ] Add test for `Foo::handleError()` in `test/common/foo_test.cc`
+4. [ ] Update `changelogs/current.yaml` with release note
+
+**Commands to run:**
+```bash
+# Step 1: Fix format (MUST DO FIRST - use Docker wrapper)
+./ci/run_envoy_docker.sh './ci/do_ci.sh fix_format'
+
+# Step 2: Verify format is fixed (use Docker wrapper)
+./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'
+# Expected: Exit code 0 (success)
+
+# Step 3: Commit format fixes
+git add -u
+git commit -m "style: fix code formatting"
+
+# Step 4: Continue with other fixes (tests, release notes, etc.)
+# ...
+```
+
+**Verification checklist:**
+- [ ] Format check passes with Docker wrapper
+- [ ] Command used: `./ci/run_envoy_docker.sh './ci/do_ci.sh check_format'`
+- [ ] All modified files comply with STYLE.md
+- [ ] No trailing whitespace
+- [ ] All lines ≤ 100 characters
+- [ ] Proper indentation (2 spaces)
+- [ ] Correct spacing around keywords and operators
+
+### Format Verification Method
+
+**Environment:** Docker (ci/run_envoy_docker.sh)
+**Tool:** clang-format via do_ci.sh
+**Consistency:** ✅ Matches CI environment exactly (MANDATORY approach)
+```
+
+### Example 7: Breaking Change Without Deprecation
 
 **Input:** Function signature changed without deprecation
 
