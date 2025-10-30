@@ -1,5 +1,26 @@
 workspace(name = "envoy")
 
+# Hedron's Compile Commands Extractor for clangd/LSP support
+# Using local_repository to test the hermetic Python workaround feature
+load("@bazel_tools//tools/build_defs/repo:local.bzl", "local_repository")
+
+local_repository(
+    name = "hedron_compile_commands",
+    path = "third_party/hedron_compile_commands",
+)
+
+load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
+hedron_compile_commands_setup()
+
+load("@hedron_compile_commands//:workspace_setup_transitive.bzl", "hedron_compile_commands_setup_transitive")
+hedron_compile_commands_setup_transitive()
+
+load("@hedron_compile_commands//:workspace_setup_transitive_transitive.bzl", "hedron_compile_commands_setup_transitive_transitive")
+hedron_compile_commands_setup_transitive_transitive()
+
+load("@hedron_compile_commands//:workspace_setup_transitive_transitive_transitive.bzl", "hedron_compile_commands_setup_transitive_transitive_transitive")
+hedron_compile_commands_setup_transitive_transitive_transitive()
+
 load("//bazel:api_binding.bzl", "envoy_api_binding")
 
 envoy_api_binding()

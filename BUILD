@@ -12,6 +12,19 @@ exports_files([
     "reviewers.yaml",
 ])
 
+# Hedron's Compile Commands Extractor for clangd/LSP support
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+
+refresh_compile_commands(
+    name = "compdb",
+    targets = {
+        "//source/...": "",
+    },
+    exclude_headers = "all",
+    exclude_external_sources = True,
+    use_hermetic_python_workaround = True,  # Required for Envoy's hermetic Python toolchain
+)
+
 alias(
     name = "envoy",
     actual = "//source/exe:envoy",
