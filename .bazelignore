@@ -5,3 +5,5 @@ mobile
 tools/dev/src
 .project
 envoy-filter-example
+ci/build
+build

@@ -934,6 +934,31 @@ case $CI_TARGET in
         pkill clangd || :
         ;;
 
+    hedron_compdb)
+        echo "Running Hedron's Compile Commands Extractor (with hermetic Python workaround)..."
+        setup_clang_toolchain
+        echo "Executing: bazel run //:compdb (excludes headers for speed and stability)"
+        bazel run "${BAZEL_BUILD_OPTIONS[@]}" //:compdb
+        echo "Hedron execution completed"
+
+        # Verify compile_commands.json was generated
+        if [[ -f compile_commands.json ]]; then
+            echo "✓ compile_commands.json generated successfully"
+            # Count entries to give user feedback
+            ENTRY_COUNT=$(grep -c '"file":' compile_commands.json || echo "unknown")
+            FILE_SIZE=$(du -h compile_commands.json | cut -f1)
+            echo "  - File size: $FILE_SIZE"
+            echo "  - Number of entries: $ENTRY_COUNT"
+            echo "  - Location: $(pwd)/compile_commands.json"
+        else
+            echo "ERROR: compile_commands.json was not generated!"
+            exit 1
+        fi
+
+        # Kill clangd to reload the compilation database
+        pkill clangd || :
+        ;;
+
     *)
         echo "Invalid do_ci.sh target (${CI_TARGET}), see ci/README.md for valid targets."
         exit 1
