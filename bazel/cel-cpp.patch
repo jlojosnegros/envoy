@@ -1,3 +1,20 @@
+diff --git a/base/values/struct_value.h b/base/values/struct_value.h
+index e7237f62..9dd58e2e 100644
+--- a/base/values/struct_value.h
++++ b/base/values/struct_value.h
+@@ -367,9 +367,9 @@ class AbstractStructValue : public StructValue,
+       ValueFactory& value_factory, int64_t number) const = 0;
+ 
+   virtual absl::StatusOr<QualifyResult> Qualify(
+-      ValueFactory& value_factory,
+-      absl::Span<const SelectQualifier> select_qualifiers,
+-      bool presence_test) const {
++      ValueFactory& value_factory ABSL_ATTRIBUTE_UNUSED,
++      absl::Span<const SelectQualifier> select_qualifiers ABSL_ATTRIBUTE_UNUSED,
++      bool presence_test ABSL_ATTRIBUTE_UNUSED) const {
+     return absl::UnimplementedError("Qualify not supported.");
+   }
+ 
 diff --git a/eval/public/cel_expr_builder_factory.h b/eval/public/cel_expr_builder_factory.h
 index 7321e29a..a7e4fc42 100644
 --- a/eval/public/cel_expr_builder_factory.h
@@ -73,6 +90,36 @@ index 952fcebc..88d42256 100644
  #include "absl/status/status.h"
  #include "absl/status/statusor.h"
  #include "absl/strings/str_cat.h"
+diff --git a/eval/public/structs/legacy_type_adapter.h b/eval/public/structs/legacy_type_adapter.h
+index 593dbf5c..51226b45 100644
+--- a/eval/public/structs/legacy_type_adapter.h
++++ b/eval/public/structs/legacy_type_adapter.h
+@@ -65,9 +65,10 @@ class LegacyTypeMutationApis {
+       CelValue::MessageWrapper::Builder& instance) const = 0;
+ 
+   virtual absl::Status SetFieldByNumber(
+-      int64_t field_number, const CelValue& value,
+-      cel::MemoryManagerRef memory_manager,
+-      CelValue::MessageWrapper::Builder& instance) const {
++      int64_t field_number ABSL_ATTRIBUTE_UNUSED,
++      const CelValue& value ABSL_ATTRIBUTE_UNUSED,
++      cel::MemoryManagerRef memory_manager ABSL_ATTRIBUTE_UNUSED,
++      CelValue::MessageWrapper::Builder& instance ABSL_ATTRIBUTE_UNUSED) const {
+     return absl::UnimplementedError("SetFieldByNumber is not yet implemented");
+   }
+ };
+@@ -116,8 +117,9 @@ class LegacyTypeAccessApis {
+   //   whether the leaf field is set to a non-default value.
+   virtual absl::StatusOr<LegacyQualifyResult> Qualify(
+       absl::Span<const cel::SelectQualifier>,
+-      const CelValue::MessageWrapper& instance, bool presence_test,
+-      cel::MemoryManagerRef memory_manager) const {
++      const CelValue::MessageWrapper& instance ABSL_ATTRIBUTE_UNUSED,
++      bool presence_test ABSL_ATTRIBUTE_UNUSED,
++      cel::MemoryManagerRef memory_manager ABSL_ATTRIBUTE_UNUSED) const {
+     return absl::UnimplementedError("Qualify unsupported.");
+   }
+ 
 diff --git a/eval/public/structs/legacy_type_provider.h b/eval/public/structs/legacy_type_provider.h
 index eea5d44b..255c6259 100644
 --- a/eval/public/structs/legacy_type_provider.h
@@ -97,3 +144,16 @@ index eea5d44b..255c6259 100644
    // Return LegacyTypeAdapter for the fully qualified type name if available.
    //
    // nullopt values are interpreted as not present.
+diff --git a/internal/copy_on_write.h b/internal/copy_on_write.h
+index 654f2aae..4c9556bb 100644
+--- a/internal/copy_on_write.h
++++ b/internal/copy_on_write.h
+@@ -48,7 +48,7 @@ class ABSL_ATTRIBUTE_TRIVIAL_ABI CopyOnWrite final {
+ 
+     template <typename... Args,
+               typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
+-    explicit Rep(Args&&... args) : value(std::forward<Args>(value)...) {}
++    explicit Rep(Args&&... args) : value(std::forward<Args>(args)...) {}
+ 
+     Rep(const Rep&) = delete;
+     Rep(Rep&&) = delete;
