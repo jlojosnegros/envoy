@@ -2023,6 +2023,9 @@ Status ClientConnectionImpl::onBeginHeaders(const nghttp2_frame* frame) {
                                      frame->hd.flags, frame->headers.padlen));
   if (frame->headers.cat == NGHTTP2_HCAT_HEADERS) {
     StreamImpl* stream = getStream(frame->hd.stream_id);
+    if (stream == nullptr) {
+      return codecClientError(absl::StrFormat("stream %d is already gone", frame->hd.stream_id));
+    }
     stream->allocTrailers();
   }
 
@@ -2117,6 +2120,9 @@ Status ServerConnectionImpl::onBeginHeaders(const nghttp2_frame* frame) {
     ASSERT(frame->headers.cat == NGHTTP2_HCAT_HEADERS);
 
     StreamImpl* stream = getStream(frame->hd.stream_id);
+    if (stream == nullptr) {
+      return codecClientError(absl::StrFormat("stream %d is already gone", frame->hd.stream_id));
+    }
     stream->allocTrailers();
     return okStatus();
   }
