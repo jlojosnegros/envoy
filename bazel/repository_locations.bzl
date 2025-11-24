@@ -160,10 +160,10 @@ REPOSITORY_LOCATIONS_SPEC = dict(
     ),
     com_google_absl = dict(
         project_name = "Abseil",
-        project_desc = "Open source collection of C++ libraries drawn from the most fundamental pieces of Google’s internal codebase",
+        project_desc = "Open source collection of C++ libraries drawn from the most fundamental pieces of Google's internal codebase",
         project_url = "https://abseil.io/",
-        version = "c8b33b0191a2db8364cacf94b267ea8a3f20ad83",
-        sha256 = "a7803eac00bf68eae1a84ee3b9fcf0c1173e8d9b89b2cee92c7b487ea65be2a9",
+        version = "20230802.1",
+        sha256 = "987ce98f02eefbaf930d6e38ab16aa05737234d7afbab2d5c4ea7adbe50c28ed",
         strip_prefix = "abseil-cpp-{version}",
         urls = ["https://github.com/abseil/abseil-cpp/archive/{version}.tar.gz"],
         use_category = ["dataplane_core", "controlplane"],
