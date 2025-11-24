@@ -140,6 +140,17 @@ REPOSITORY_LOCATIONS_SPEC = dict(
         license = "Apache-2.0",
         license_url = "https://github.com/bufbuild/buf/blob/v{version}/LICENSE",
     ),
+    dev_cel = dict(
+        project_name = "CEL",
+        project_desc = "Common Expression Language -- specification and binary representation",
+        project_url = "https://github.com/google/cel-spec",
+        strip_prefix = "cel-spec-{version}",
+        sha256 = "3ee09eb69dbe77722e9dee23dc48dc2cd9f765869fcf5ffb1226587c81791a0b",
+        version = "0.15.0",
+        urls = ["https://github.com/google/cel-spec/archive/v{version}.tar.gz"],
+        use_category = ["api"],
+        release_date = "2024-03-27",
+    ),
     com_github_chrusty_protoc_gen_jsonschema = dict(
         project_name = "protoc-gen-jsonschema",
         project_desc = "Protobuf to JSON-Schema compiler",
