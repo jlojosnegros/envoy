@@ -8,11 +8,11 @@ PROTOBUF_VERSION = "25.3"
 # The names change in upcoming versions.
 # The shas are calculated from the downloads on the releases page.
 PROTOC_VERSIONS = dict(
-    linux_aarch_64 = "1c7750b6e038305b5a7fc3d0cda1ebefdf106a4f30a787bf826ed2fc47c3967d",
-    linux_x86_64 = "0502f286ac9ed860b629a7965a14527b1f2dd131e4283fa23c2d7f184672aa9a",
-    osx_aarch_64 = "8c7afae8626b6811e7b5897d16d940c2dbf50b1e135ed958a01db6566bdda726",
-    osx_x86_64 = "07e5fdcf1b0708d3367dc5e6eb8d135de7e407d75316c93155cfd8ab362eec80",
-    win64 = "a309c39442fb75f0db343cb22c111a00f91cdf0767f332e170644b9378e2bcc6",
+    linux_aarch_64 = "9eae1f20f70cccc912d1c318c3929b86aebf5afd4b0f32c196ef682c222ed5ae",
+    linux_x86_64 = "f853e691868d0557425ea290bf7ba6384eef2fa9b04c323afab49a770ba9da80",
+    osx_aarch_64 = "d0fcd6d3b3ef6f22f1c47cc30a80c06727e1eccdddcaf0f4a3be47c070ffd3fe",
+    osx_x86_64 = "247e003b8e115405172eacc50bd19825209d85940728e766f0848eee7c80e2a1",
+    win64 = "d6b336b852726364313330631656b7f395dde5b1141b169f5c4b8d43cdf01482",
 )
 
 REPOSITORY_LOCATIONS_SPEC = dict(
