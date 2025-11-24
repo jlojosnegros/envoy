@@ -88,9 +88,6 @@ public:
   bool match(absl::string_view) const override { return true; }
 };
 
-// Forward declaration for custom string matcher extension
-StringMatcherPtr getExtensionStringMatcher(const ::xds::core::v3::TypedExtensionConfig& config);
-
 template <class StringMatcherType = envoy::type::matcher::v3::StringMatcher>
 class StringMatcherImpl : public ValueMatcher, public StringMatcher {
 public:
@@ -150,10 +147,13 @@ private:
   // Initialize for envoy type - no kCustom support
   void initialize(const envoy::type::matcher::v3::StringMatcher&) {}
 
-  // Initialize for xds type - has kCustom support
+  // Initialize for xds type - has kCustom in proto but we don't support it in v1.28
   void initialize(const xds::type::matcher::v3::StringMatcher& matcher) {
     if (matcher.has_custom()) {
-      custom_ = getExtensionStringMatcher(matcher.custom());
+      // Custom extensions are not supported in v1.28, but we need to handle this case
+      // to avoid compilation errors. If custom matchers are actually used, this will
+      // result in a PANIC in matchCommon() with "unexpected" pattern.
+      // TODO: Implement custom extension support when upgrading beyond v1.28
     }
   }
 
@@ -162,13 +162,11 @@ private:
     return matchCommon(value);
   }
 
-  // Match for xds type - has kCustom support
+  // Match for xds type - has kCustom in enum but not supported in v1.28
   bool match(const absl::string_view value,
-             const xds::type::matcher::v3::StringMatcher& matcher) const {
-    if (matcher.match_pattern_case() ==
-        xds::type::matcher::v3::StringMatcher::MatchPatternCase::kCustom) {
-      return custom_->match(value);
-    }
+             const xds::type::matcher::v3::StringMatcher&) const {
+    // Note: kCustom exists in the xds proto enum but is not supported in v1.28
+    // If someone tries to use it, matchCommon() will PANIC with "unexpected"
     return matchCommon(value);
   }
 
@@ -198,14 +196,6 @@ private:
   const StringMatcherType matcher_;
   Regex::CompiledMatcherPtr regex_;
   std::string lowercase_contains_match_;
-  StringMatcherPtr custom_;  // Only used when StringMatcherType supports kCustom (xds type)
-};
-
-class StringMatcherExtensionFactory : public Config::TypedFactory {
-public:
-  virtual StringMatcherPtr createStringMatcher(const ProtobufWkt::Any& config) PURE;
-
-  std::string category() const override { return "envoy.string_matcher"; }
 };
 
 class ListMatcher : public ValueMatcher {
