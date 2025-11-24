@@ -86,20 +86,27 @@ public:
   bool match(absl::string_view) const override { return true; }
 };
 
+StringMatcherPtr getExtensionStringMatcher(const ::xds::core::v3::TypedExtensionConfig& config,
+                                           Server::Configuration::CommonFactoryContext& context);
+
 template <class StringMatcherType = envoy::type::matcher::v3::StringMatcher>
 class StringMatcherImpl : public ValueMatcher, public StringMatcher {
 public:
-  explicit StringMatcherImpl(const StringMatcherType& matcher) : matcher_(matcher) {
+  explicit StringMatcherImpl(const StringMatcherType& matcher,
+                             Server::Configuration::CommonFactoryContext& context)
+      : matcher_(matcher) {
     if (matcher.match_pattern_case() == StringMatcherType::MatchPatternCase::kSafeRegex) {
       if (matcher.ignore_case()) {
         ExceptionUtil::throwEnvoyException("ignore_case has no effect for safe_regex.");
       }
-      regex_ = Regex::Utility::parseRegex(matcher_.safe_regex());
+      regex_ = Regex::Utility::parseRegex(matcher_.safe_regex(), context.regexEngine());
     } else if (matcher.match_pattern_case() == StringMatcherType::MatchPatternCase::kContains) {
       if (matcher_.ignore_case()) {
         // Cache the lowercase conversion of the Contains matcher for future use
         lowercase_contains_match_ = absl::AsciiStrToLower(matcher_.contains());
       }
+    } else if (matcher.has_custom()) {
+      custom_ = getExtensionStringMatcher(matcher.custom(), context);
     }
   }
 
@@ -121,10 +128,11 @@ public:
                  : absl::StrContains(value, matcher_.contains());
     case StringMatcherType::MatchPatternCase::kSafeRegex:
       return regex_->match(value);
-    case StringMatcherType::MatchPatternCase::MATCH_PATTERN_NOT_SET:
-      break;
+    case StringMatcherType::MatchPatternCase::kCustom:
+      return custom_->match(value);
+    default:
+      PANIC("unexpected");
     }
-    PANIC("unexpected");
   }
   bool match(const ProtobufWkt::Value& value) const override {
 
@@ -158,6 +166,7 @@ private:
   const StringMatcherType matcher_;
   Regex::CompiledMatcherPtr regex_;
   std::string lowercase_contains_match_;
+  StringMatcherPtr custom_;
 };
 
 class ListMatcher : public ValueMatcher {

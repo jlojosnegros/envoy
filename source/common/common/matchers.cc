@@ -182,5 +182,13 @@ bool PathMatcher::match(const absl::string_view path) const {
   return matcher_.match(Http::PathUtil::removeQueryAndFragment(path));
 }
 
+StringMatcherPtr getExtensionStringMatcher(const ::xds::core::v3::TypedExtensionConfig& config,
+                                           Server::Configuration::CommonFactoryContext& context) {
+  auto factory = Config::Utility::getAndCheckFactory<StringMatcherExtensionFactory>(config, false);
+  ProtobufTypes::MessagePtr message = Config::Utility::translateToFactoryConfig(
+      config, context.messageValidationVisitor(), *factory);
+  return factory->createStringMatcher(*message, context);
+}
+
 } // namespace Matchers
 } // namespace Envoy
