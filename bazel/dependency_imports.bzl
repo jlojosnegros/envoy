@@ -3,7 +3,6 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchai
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 load("@build_bazel_rules_apple//apple:repositories.bzl", "apple_rules_dependencies")
 load("@rules_fuzzing//fuzzing:repositories.bzl", "rules_fuzzing_dependencies")
-load("@upb//bazel:workspace_deps.bzl", "upb_deps")
 load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_repository_set")
 load("@rules_rust//rust:defs.bzl", "rust_common")
@@ -52,7 +51,6 @@ def envoy_dependency_imports(go_version = GO_VERSION, jq_version = JQ_VERSION, y
         ],
     )
     shellcheck_dependencies()
-    upb_deps()
     proxy_wasm_rust_sdk_dependencies()
     rules_fuzzing_dependencies(
         oss_fuzz = True,
