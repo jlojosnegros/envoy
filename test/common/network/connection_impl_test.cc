@@ -3480,10 +3480,11 @@ TEST_P(ReadBufferLimitTest, NoLimit) { readBufferLimitTest(0, 256 * 1024); }
 
 TEST_P(ReadBufferLimitTest, SomeLimit) {
   const uint32_t read_buffer_limit = 32 * 1024;
-  // Envoy has soft limits, so as long as the first read is <= read_buffer_limit - 1 it will do a
-  // second read. The effective chunk size is then read_buffer_limit - 1 + MaxReadSize,
-  // which is currently 16384.
-  readBufferLimitTest(read_buffer_limit, read_buffer_limit - 1 + 16384);
+  // Envoy has soft limits, so as long as the first read is < read_buffer_limit it will do a second
+  // read, before presenting the data to the ReadFilter. This additional read may include allocating
+  // an additional slice. The total chunk size is then read_buffer_limit +
+  // Buffer::Slice::default_slice_size_, which is currently 16384.
+  readBufferLimitTest(read_buffer_limit, read_buffer_limit + Buffer::Slice::default_slice_size_);
 }
 
 class TcpClientConnectionImplTest : public testing::TestWithParam<Address::IpVersion> {
