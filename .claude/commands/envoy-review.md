@@ -15,9 +15,12 @@ Eres un agente especializado en revisar código de Envoy antes de la submisión 
 ### ENVOY_DOCKER_BUILD_DIR
 Esta variable es **OBLIGATORIA** para ejecutar comandos que requieren Docker.
 - Si el usuario proporciona el argumento `$ARGUMENTS` y contiene un path, úsalo como ENVOY_DOCKER_BUILD_DIR
-- Si no está definida, **DEBES preguntar al usuario** antes de ejecutar cualquier comando Docker
+- Si no está definida, **DEBES preguntar inmediatamente al usuario** (no continuar)
+- Si el usuario responde con --skip-docker: Entonces omitir comandos Docker
+- NUNCA omitir comandos Docker silenciosamente
 
 ### Opciones disponibles (parseadas de $ARGUMENTS):
+- `--base=<branch>` : Rama base para comparar (default: main)
 - `--coverage-full` : Ejecutar build de coverage completo (proceso lento)
 - `--skip-docker` : Solo ejecutar checks que no requieren Docker
 - `--only=<agentes>` : Ejecutar solo agentes específicos (comma-separated)
@@ -29,25 +32,22 @@ Esta variable es **OBLIGATORIA** para ejecutar comandos que requieren Docker.
 ### Paso 1: Parsear argumentos
 Analiza `$ARGUMENTS` para extraer:
 - ENVOY_DOCKER_BUILD_DIR (si se proporciona como primer argumento o con --build-dir=)
-- Flags (--coverage-full, --skip-docker, --only, --fix, --save-report)
+- Flags (--base, --coverage-full, --skip-docker, --only, --fix, --save-report)
 
-### Paso 2: Verificar ENVOY_DOCKER_BUILD_DIR
-Si no está definida y no se usa --skip-docker:
-```
-Pregunta al usuario: "Por favor, proporciona el directorio ENVOY_DOCKER_BUILD_DIR para ejecutar los comandos Docker.
-Este es el directorio donde se almacenarán los artefactos del build.
-Ejemplo: /home/usuario/envoy-build"
-```
+### Paso 2: Detectar cambios (ANTES de verificar Docker)
 
-### Paso 3: Detectar cambios
-Ejecuta para identificar archivos modificados:
+Primero, determinar la rama base para comparar:
+- Si el usuario proporcionó `--base=<branch>` en $ARGUMENTS, usar esa rama
+- Si no, preguntar al usuario: "¿Cuál es la rama base para comparar? (default: main)"
+- Si el usuario no responde o presiona enter, usar "main"
+
+Ejecuta para identificar archivos modificados (donde `<base>` es la rama determinada):
 ```bash
-git diff --name-only HEAD~1..HEAD
+git diff --name-only <base>...HEAD
 git diff --name-only --cached
 git status --porcelain
 ```
 
-### Paso 4: Clasificar cambios
 Basándote en los archivos modificados, determina:
 - `has_api_changes`: cambios en `api/` directorio
 - `has_extension_changes`: cambios en `source/extensions/` o `contrib/`
@@ -56,28 +56,98 @@ Basándote en los archivos modificados, determina:
 - `has_doc_changes`: cambios en `docs/` o `changelogs/`
 - `has_build_changes`: cambios en BUILD, .bzl, bazel/
 - `lines_changed`: número de líneas modificadas (para determinar si es "major feature")
+- `requires_docker_checks`: TRUE si `has_source_changes` OR `has_api_changes` OR `has_build_changes`
 
-### Paso 5: Ejecutar Sub-agentes
+### Paso 3: Verificar ENVOY_DOCKER_BUILD_DIR (BLOQUEANTE)
 
-**IMPORTANTE**: Los sub-agentes deben EJECUTAR los comandos de verificación, no solo describirlos.
-Consulta cada archivo de sub-agente en `.claude/agents/` para ver los comandos específicos a ejecutar.
+**CRÍTICO**: Este paso es BLOQUEANTE. NO continuar hasta resolverlo.
 
-#### Siempre ejecutar (sin Docker) - EJECUTAR comandos git/grep inmediatamente:
+Si `requires_docker_checks` es TRUE y no se usa --skip-docker:
+1. Verificar si ENVOY_DOCKER_BUILD_DIR fue proporcionado en $ARGUMENTS
+2. Si NO está definida:
+   - **DETENERSE INMEDIATAMENTE**
+   - Preguntar al usuario usando AskUserQuestion o mensaje directo:
+   ```
+   "Para ejecutar los checks de formato y API necesito ENVOY_DOCKER_BUILD_DIR.
+
+   Opciones:
+   1. Proporcionar el path (ej: /home/usuario/envoy-build)
+   2. Usar --skip-docker para omitir checks de Docker
+
+   ¿Cuál es tu ENVOY_DOCKER_BUILD_DIR?"
+   ```
+   - **ESPERAR respuesta del usuario antes de continuar**
+   - NO generar reporte parcial
+   - NO omitir silenciosamente los comandos Docker
+
+3. Si el usuario proporciona un path: guardarlo y continuar
+4. Si el usuario confirma --skip-docker: marcar `skip_docker=true` y continuar
+
+**NUNCA omitir comandos Docker silenciosamente. Siempre preguntar o recibir --skip-docker explícito.**
+
+### Paso 4: Ejecutar checks sin Docker
+
+Estos checks se ejecutan SIEMPRE, no requieren Docker:
+
 1. **pr-metadata**: EJECUTAR `git log` para verificar DCO, formato de título
 2. **dev-env**: EJECUTAR `ls .git/hooks/` para verificar hooks instalados
 3. **inclusive-language**: EJECUTAR `grep` en el diff para buscar términos prohibidos
-
-#### Condicional (sin Docker):
 4. **docs-changelog**: Si `has_source_changes` o `has_api_changes` - EJECUTAR verificación de changelogs/current.yaml
-5. **extension-review**: Si `has_extension_changes`
-6. **test-coverage (semi)**: Si `has_source_changes` - usar heurísticos (el build de coverage es muy lento)
+5. **extension-review**: Si `has_extension_changes` (cambios en `source/extensions/` o `contrib/`)
+6. **test-coverage (heurístico)**: Si `has_source_changes` - verificar que existen tests correspondientes
 
-#### Condicional (con Docker) - saltar si --skip-docker:
-7. **code-format**: EJECUTAR `do_ci.sh format` (tarda 2-5 min, siempre ejecutar si hay cambios de código)
-8. **code-lint (parcial)**: EJECUTAR verificación de inclusive language (grep rápido). clang-tidy completo solo con --full-lint
-9. **api-review**: Si `has_api_changes` - EJECUTAR `do_ci.sh api_compat`
-10. **deps-check**: Si `has_build_changes` - EJECUTAR `do_ci.sh deps`
-11. **test-coverage (full)**: Solo si --coverage-full (tarda > 1 hora)
+### Paso 5: Ejecutar checks con Docker
+
+**IMPORTANTE**: Este paso solo se ejecuta si:
+- `requires_docker_checks` es TRUE
+- `skip_docker` es FALSE
+- ENVOY_DOCKER_BUILD_DIR está definido (verificado en Paso 3)
+
+Checks con Docker a ejecutar:
+
+1. **code-format**: EJECUTAR `do_ci.sh format` (tarda 2-5 min, siempre ejecutar si hay cambios de código)
+   ```bash
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
+   ```
+
+2. **api-review**: Si `has_api_changes` - EJECUTAR `do_ci.sh api_compat`
+   ```bash
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh api_compat'
+   ```
+
+3. **deps-check**: Si `has_build_changes` - EJECUTAR `do_ci.sh deps`
+   ```bash
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh deps'
+   ```
+
+4. **test-coverage (full)**: Solo si --coverage-full (tarda > 1 hora)
+   ```bash
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh coverage'
+   ```
+5. **code-lint (completo)**: Solo si --full-lint 
+   ```bash
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh clang-tidy'
+   ```
+### Paso 5.5: Verificar ejecución de checks críticos (CHECKPOINT)
+
+**ANTES de generar el reporte**, verificar que se ejecutaron todos los checks requeridos:
+
+```
+Checklist de ejecución:
+[ ] format check - REQUERIDO si has_source_changes (ejecutado o skip_docker explícito)
+[ ] api_compat   - REQUERIDO si has_api_changes (ejecutado o skip_docker explícito)
+[ ] deps check   - REQUERIDO si has_build_changes (ejecutado o skip_docker explícito)
+```
+
+**Si algún check requerido NO fue ejecutado y NO hay skip_docker explícito:**
+- DETENERSE
+- Informar al usuario qué checks faltan
+- Preguntar si desea ejecutarlos o confirmar --skip-docker
+- NO generar reporte hasta resolver
+
+**El reporte DEBE indicar claramente:**
+- Qué checks fueron EJECUTADOS (con resultados)
+- Qué checks fueron OMITIDOS (con razón: --skip-docker, no aplica, etc.)
 
 ### Paso 6: Generar Reporte Final
 
@@ -90,6 +160,18 @@ Consolida todos los resultados en formato:
 **Branch**: [nombre del branch]
 **Base**: [commit base]
 **Commits analizados**: [número]
+
+## Checks Ejecutados
+
+| Check | Estado | Tiempo | Notas |
+|-------|--------|--------|-------|
+| PR Metadata | ✅ Ejecutado | - | git log |
+| Dev Environment | ✅ Ejecutado | - | hooks check |
+| Inclusive Language | ✅ Ejecutado | - | grep diff |
+| Docs/Changelog | ✅ Ejecutado | - | file check |
+| Code Format | ✅ Ejecutado / ⏭️ Omitido (--skip-docker) / ❌ No aplica | Xm Xs | do_ci.sh format |
+| API Compat | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh api_compat |
+| Dependencies | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh deps |
 
 ## Resumen Ejecutivo
 
