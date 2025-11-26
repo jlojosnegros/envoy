@@ -20,12 +20,64 @@ Esta variable es **OBLIGATORIA** para ejecutar comandos que requieren Docker.
 - NUNCA omitir comandos Docker silenciosamente
 
 ### Opciones disponibles (parseadas de $ARGUMENTS):
+- `--help` : Mostrar ayuda y salir
 - `--base=<branch>` : Rama base para comparar (default: main)
+- `--build-dir=<path>` : ENVOY_DOCKER_BUILD_DIR para comandos Docker
 - `--coverage-full` : Ejecutar build de coverage completo (proceso lento)
 - `--skip-docker` : Solo ejecutar checks que no requieren Docker
+- `--full-lint` : Ejecutar clang-tidy completo (proceso lento)
 - `--only=<agentes>` : Ejecutar solo agentes específicos (comma-separated)
 - `--fix` : Permitir correcciones automáticas donde sea posible
 - `--save-report` : Guardar reporte en archivo
+
+### Si el usuario usa --help
+
+Mostrar este mensaje y NO ejecutar nada más:
+
+```
+Envoy PR Pre-Review Agent
+==========================
+
+Revisa tu código antes de crear un PR para asegurar que cumple
+con los requisitos de Envoy.
+
+USO:
+  /envoy-review [opciones]
+  /envoy-review /path/to/build-dir
+  /envoy-review --build-dir=/path/to/build-dir --base=main
+
+OPCIONES:
+  --help                  Mostrar esta ayuda
+  --base=<branch>         Rama base para comparar (default: main)
+  --build-dir=<path>      Directorio para builds Docker (ENVOY_DOCKER_BUILD_DIR)
+  --skip-docker           Omitir checks que requieren Docker
+  --coverage-full         Ejecutar build de coverage completo (~1 hora)
+  --full-lint             Ejecutar clang-tidy completo (~30 min)
+  --only=<checks>         Solo ejecutar checks específicos (comma-separated)
+  --fix                   Aplicar correcciones automáticas donde sea posible
+  --save-report           Guardar reporte en archivo
+
+CHECKS DISPONIBLES:
+  Sin Docker (siempre se ejecutan):
+    - pr-metadata         Verifica DCO, formato de título, commit message
+    - dev-env             Verifica hooks de git instalados
+    - inclusive-language  Busca términos prohibidos
+    - docs-changelog      Verifica release notes si aplica
+    - extension-review    Verifica política de extensiones si aplica
+    - test-coverage       Verifica existencia de tests (heurístico)
+
+  Con Docker (requieren --build-dir):
+    - code-format         Verifica formateo con clang-format (~2-5 min)
+    - api-compat          Verifica breaking changes en API (~5-15 min)
+    - deps                Verifica dependencias (~5-15 min)
+
+EJEMPLOS:
+  /envoy-review --help
+  /envoy-review /home/user/envoy-build
+  /envoy-review --build-dir=/home/user/envoy-build --base=upstream/main
+  /envoy-review --skip-docker
+  /envoy-review --only=pr-metadata,inclusive-language
+```
 
 ## Flujo de Ejecución
 
