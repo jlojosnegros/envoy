@@ -3,6 +3,8 @@
 ## Propósito
 Verificar que el entorno de desarrollo está correctamente configurado según las instrucciones de Envoy.
 
+## ACCIÓN: EJECUTAR SIEMPRE (comandos ls/cat instantáneos, sin Docker)
+
 ## Verificaciones
 
 ### 1. Git Hooks Instalados (ERROR)

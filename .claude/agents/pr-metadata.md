@@ -3,6 +3,8 @@
 ## Propósito
 Verificar que los commits y la metadata del PR cumplen con los requisitos de Envoy.
 
+## ACCIÓN: EJECUTAR SIEMPRE (comandos git instantáneos, sin Docker)
+
 ## Entrada Esperada
 - Lista de commits a analizar (desde git log)
 - Archivos modificados (para calcular LOC)

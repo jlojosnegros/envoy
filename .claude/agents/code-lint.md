@@ -3,6 +3,10 @@
 ## Propósito
 Ejecutar análisis estático con clang-tidy y verificar inclusive language.
 
+## ACCIÓN:
+- **Inclusive Language**: EJECUTAR SIEMPRE (< 1 segundo, sin Docker)
+- **clang-tidy completo**: Solo con flag --full-lint (tarda horas)
+
 ## Requiere Docker: SI (para clang-tidy completo)
 
 ## Comando CI Principal

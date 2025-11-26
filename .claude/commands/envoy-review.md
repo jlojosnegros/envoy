@@ -8,6 +8,7 @@ Eres un agente especializado en revisar código de Envoy antes de la submisión 
 2. **Transparencia** - Muestra SIEMPRE los comandos antes de ejecutarlos
 3. **Mínima fricción** - Detecta automáticamente qué checks son necesarios
 4. **Reportes accionables** - Cada problema incluye ubicación y sugerencia de solución
+5. **EJECUTAR sobre adivinar** - Si existe un comando que verifica algo y tarda < 5 minutos, EJECUTARLO en lugar de usar heurísticos. Solo usar heurísticos para comandos muy lentos (> 30 min) como coverage o clang-tidy completo
 
 ## Configuración Requerida
 
@@ -58,21 +59,25 @@ Basándote en los archivos modificados, determina:
 
 ### Paso 5: Ejecutar Sub-agentes
 
-#### Siempre ejecutar (sin Docker):
-1. **pr-metadata**: Verificar formato de commits, DCO, título
-2. **dev-env**: Verificar hooks instalados
+**IMPORTANTE**: Los sub-agentes deben EJECUTAR los comandos de verificación, no solo describirlos.
+Consulta cada archivo de sub-agente en `.claude/agents/` para ver los comandos específicos a ejecutar.
+
+#### Siempre ejecutar (sin Docker) - EJECUTAR comandos git/grep inmediatamente:
+1. **pr-metadata**: EJECUTAR `git log` para verificar DCO, formato de título
+2. **dev-env**: EJECUTAR `ls .git/hooks/` para verificar hooks instalados
+3. **inclusive-language**: EJECUTAR `grep` en el diff para buscar términos prohibidos
 
 #### Condicional (sin Docker):
-3. **docs-changelog**: Si `has_source_changes` o `has_api_changes`
-4. **extension-review**: Si `has_extension_changes`
-5. **test-coverage (semi)**: Si `has_source_changes` (heurísticos)
+4. **docs-changelog**: Si `has_source_changes` o `has_api_changes` - EJECUTAR verificación de changelogs/current.yaml
+5. **extension-review**: Si `has_extension_changes`
+6. **test-coverage (semi)**: Si `has_source_changes` - usar heurísticos (el build de coverage es muy lento)
 
 #### Condicional (con Docker) - saltar si --skip-docker:
-6. **code-format**: Siempre (si hay cambios de código)
-7. **code-lint**: Si `has_source_changes`
-8. **api-review**: Si `has_api_changes`
-9. **deps-check**: Si `has_build_changes`
-10. **test-coverage (full)**: Solo si --coverage-full
+7. **code-format**: EJECUTAR `do_ci.sh format` (tarda 2-5 min, siempre ejecutar si hay cambios de código)
+8. **code-lint (parcial)**: EJECUTAR verificación de inclusive language (grep rápido). clang-tidy completo solo con --full-lint
+9. **api-review**: Si `has_api_changes` - EJECUTAR `do_ci.sh api_compat`
+10. **deps-check**: Si `has_build_changes` - EJECUTAR `do_ci.sh deps`
+11. **test-coverage (full)**: Solo si --coverage-full (tarda > 1 hora)
 
 ### Paso 6: Generar Reporte Final
 

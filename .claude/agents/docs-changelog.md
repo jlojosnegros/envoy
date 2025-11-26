@@ -3,6 +3,8 @@
 ## Propósito
 Verificar que los cambios de documentación y release notes cumplen con los requisitos de Envoy.
 
+## ACCIÓN: EJECUTAR SIEMPRE si hay cambios en source/ o api/ (comandos git instantáneos, sin Docker)
+
 ## Entrada Esperada
 - Lista de archivos modificados
 - Tipo de cambio detectado (user-facing, API, extension, etc.)

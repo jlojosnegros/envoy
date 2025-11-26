@@ -3,6 +3,9 @@
 ## Propósito
 Verificar que el código cumple con los estándares de formateo de Envoy usando clang-format y otras herramientas.
 
+## ACCIÓN: EJECUTAR SIEMPRE (tarda 2-5 minutos)
+Este comando es rápido. NO usar heurísticos - ejecutar el comando directamente.
+
 ## Requiere Docker: SI
 
 ## Comando CI Principal

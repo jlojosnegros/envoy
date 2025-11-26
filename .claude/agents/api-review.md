@@ -6,6 +6,10 @@ Verificar que los cambios en la API cumplen con el checklist de revisión de Env
 ## Se Activa Cuando
 Hay cambios en el directorio `api/`
 
+## ACCIÓN:
+- **Fase 1 (Análisis estático)**: EJECUTAR SIEMPRE (comandos git/grep instantáneos)
+- **Fase 2 (api_compat)**: EJECUTAR SIEMPRE si hay cambios en api/ (tarda 5-15 min con Docker)
+
 ## Requiere Docker: SI (para api_compat)
 
 ## Verificaciones
