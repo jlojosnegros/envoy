@@ -13,13 +13,12 @@
 #include "envoy/type/matcher/v3/string.pb.h"
 #include "envoy/type/matcher/v3/value.pb.h"
 
-#include "xds/type/matcher/v3/string.pb.h"
-
 #include "source/common/common/regex.h"
 #include "source/common/common/utility.h"
 #include "source/common/protobuf/protobuf.h"
 
 #include "absl/strings/match.h"
+#include "xds/type/matcher/v3/string.pb.h"
 
 namespace Envoy {
 namespace Matchers {
@@ -109,9 +108,7 @@ public:
   }
 
   // StringMatcher - public interface delegates to type-specific overload
-  bool match(const absl::string_view value) const override {
-    return match(value, matcher_);
-  }
+  bool match(const absl::string_view value) const override { return match(value, matcher_); }
 
   bool match(const ProtobufWkt::Value& value) const override {
     if (value.kind_case() != ProtobufWkt::Value::kStringValue) {
@@ -163,8 +160,7 @@ private:
   }
 
   // Match for xds type - has kCustom in enum but not supported in v1.28
-  bool match(const absl::string_view value,
-             const xds::type::matcher::v3::StringMatcher&) const {
+  bool match(const absl::string_view value, const xds::type::matcher::v3::StringMatcher&) const {
     // Note: kCustom exists in the xds proto enum but is not supported in v1.28
     // If someone tries to use it, matchCommon() will PANIC with "unexpected"
     return matchCommon(value);

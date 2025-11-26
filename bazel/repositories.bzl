@@ -1,8 +1,8 @@
-load(":dev_binding.bzl", "envoy_dev_binding")
+load("@com_google_googleapis//:repository_rules.bzl", "switched_rules_by_language")
 load("@envoy_api//bazel:envoy_http_archive.bzl", "envoy_http_archive")
 load("@envoy_api//bazel:external_deps.bzl", "load_repository_locations")
+load(":dev_binding.bzl", "envoy_dev_binding")
 load(":repository_locations.bzl", "PROTOC_VERSIONS", "REPOSITORY_LOCATIONS_SPEC")
-load("@com_google_googleapis//:repository_rules.bzl", "switched_rules_by_language")
 
 PPC_SKIP_TARGETS = ["envoy.filters.http.lua"]
 
@@ -1147,7 +1147,6 @@ def _com_github_grpc_grpc():
         actual = "@com_github_grpc_grpc//test/core/tsi/alts/fake_handshaker:transport_security_common_proto",
     )
 
-
 def _re2():
     external_http_archive("com_googlesource_code_re2")
 
@@ -1155,7 +1154,6 @@ def _re2():
         name = "re2",
         actual = "@com_googlesource_code_re2//:re2",
     )
-
 
 def _proxy_wasm_cpp_sdk():
     external_http_archive(name = "proxy_wasm_cpp_sdk")
