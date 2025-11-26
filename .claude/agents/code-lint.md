@@ -34,7 +34,7 @@ Advertencias que no bloquean pero deberían revisarse.
 Buscar términos prohibidos en archivos modificados:
 
 ```bash
-git diff --name-only HEAD~1..HEAD | xargs grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' 2>/dev/null
+git diff --name-only HEAD~1..HEAD | grep -v '^\.claude/' | xargs grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' 2>/dev/null
 ```
 
 **Términos prohibidos y reemplazos:**
@@ -49,6 +49,7 @@ git diff --name-only HEAD~1..HEAD | xargs grep -n -E -i '\b(whitelist|blacklist|
 - Referencias a branches de git externos (ej: `upstream/master`)
 - Citas textuales de documentación externa
 - Nombres de APIs externas que no controlamos
+- Archivos en `.claude/` (documentación del agente de revisión)
 
 **Si se encuentran:**
 ```
@@ -64,8 +65,8 @@ Para una verificación rápida sin Docker completo:
 
 ### Inclusive Language (SIEMPRE ejecutar):
 ```bash
-# Buscar en archivos modificados
-for file in $(git diff --name-only HEAD~1..HEAD); do
+# Buscar en archivos modificados (excluyendo .claude/)
+for file in $(git diff --name-only HEAD~1..HEAD | grep -v '^\.claude/'); do
   grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' "$file" 2>/dev/null
 done
 ```

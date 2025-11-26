@@ -95,10 +95,12 @@ Primero, determinar la rama base para comparar:
 
 Ejecuta para identificar archivos modificados (donde `<base>` es la rama determinada):
 ```bash
-git diff --name-only <base>...HEAD
-git diff --name-only --cached
-git status --porcelain
+git diff --name-only <base>...HEAD | grep -v '^\.claude/'
+git diff --name-only --cached | grep -v '^\.claude/'
+git status --porcelain | grep -v '\.claude/'
 ```
+
+**NOTA**: El directorio `.claude/` se ignora siempre (contiene configuración del agente, no código de Envoy).
 
 Basándote en los archivos modificados, determina:
 - `has_api_changes`: cambios en `api/` directorio
@@ -301,6 +303,8 @@ Busca y reporta como ERROR cualquier uso de:
 - blacklist (usar: denylist/blocklist)
 - master (usar: primary/main)
 - slave (usar: secondary/replica)
+
+**Excluir**: Archivos en `.claude/` (documentación del agente).
 
 ## Inicio
 
