@@ -282,9 +282,22 @@ Crea el directorio si no existe antes de ejecutar comandos.
 2. Explica qué hace el comando
 3. Ejecuta el comando
 
-Formato para comandos Docker:
+**OBLIGATORIO - Copiar exactamente este patrón (NO simplificar, NO omitir timestamp, NO cambiar formato):**
+
 ```bash
-ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh <command>' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/YYYYMMDDHHMM-<name>.log
+bash -c 'TIMESTAMP=$(date +%Y%m%d%H%M) && ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh "./ci/do_ci.sh <command>" 2>&1 | tee /path/to/build/review-agent-logs/${TIMESTAMP}-<command>.log'
+```
+
+Ejemplos literales:
+```bash
+# format check
+bash -c 'TIMESTAMP=$(date +%Y%m%d%H%M) && ENVOY_DOCKER_BUILD_DIR=/home/user/build ./ci/run_envoy_docker.sh "./ci/do_ci.sh format" 2>&1 | tee /home/user/build/review-agent-logs/${TIMESTAMP}-format.log'
+
+# api_compat check
+bash -c 'TIMESTAMP=$(date +%Y%m%d%H%M) && ENVOY_DOCKER_BUILD_DIR=/home/user/build ./ci/run_envoy_docker.sh "./ci/do_ci.sh api_compat" 2>&1 | tee /home/user/build/review-agent-logs/${TIMESTAMP}-api_compat.log'
+
+# deps check
+bash -c 'TIMESTAMP=$(date +%Y%m%d%H%M) && ENVOY_DOCKER_BUILD_DIR=/home/user/build ./ci/run_envoy_docker.sh "./ci/do_ci.sh deps" 2>&1 | tee /home/user/build/review-agent-logs/${TIMESTAMP}-deps.log'
 ```
 
 ## Documentación de Referencia
