@@ -76,7 +76,7 @@ Para cambios mayores (>100 líneas), debería haber:
 
 **Cálculo de LOC:**
 ```bash
-git diff --stat HEAD~1..HEAD | tail -1
+git diff --stat <base>...HEAD | tail -1
 ```
 
 ### 8. Fixes Format (INFO)
@@ -109,9 +109,9 @@ Fixes #XXX
 
 ## Ejecución
 
-1. Obtener lista de commits:
+1. Obtener lista de commits (desde rama base):
 ```bash
-git log --oneline HEAD~10..HEAD
+git log --oneline <base>...HEAD
 ```
 
 2. Para cada commit, analizar:
@@ -123,7 +123,7 @@ git log -1 --format='%an <%ae>' <SHA>  # autor
 
 3. Calcular líneas cambiadas:
 ```bash
-git diff --shortstat HEAD~1..HEAD
+git diff --shortstat <base>...HEAD
 ```
 
 4. Generar reporte con hallazgos

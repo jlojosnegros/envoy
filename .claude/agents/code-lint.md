@@ -34,8 +34,10 @@ Advertencias que no bloquean pero deberían revisarse.
 Buscar términos prohibidos en archivos modificados:
 
 ```bash
-git diff --name-only HEAD~1..HEAD | grep -v '^\.claude/' | xargs grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' 2>/dev/null
+git diff --name-only <base>...HEAD | grep -v '^\.claude/' | xargs grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' 2>/dev/null
 ```
+
+**NOTA**: `<base>` es la rama base determinada en el paso 2 del agente principal (default: main).
 
 **Términos prohibidos y reemplazos:**
 | Prohibido | Reemplazo |
@@ -66,7 +68,8 @@ Para una verificación rápida sin Docker completo:
 ### Inclusive Language (SIEMPRE ejecutar):
 ```bash
 # Buscar en archivos modificados (excluyendo .claude/)
-for file in $(git diff --name-only HEAD~1..HEAD | grep -v '^\.claude/'); do
+# <base> es la rama base determinada en envoy-review.md (default: main)
+for file in $(git diff --name-only <base>...HEAD | grep -v '^\.claude/'); do
   grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' "$file" 2>/dev/null
 done
 ```
@@ -113,9 +116,9 @@ done
 
 ### Fase 1: Inclusive Language (Sin Docker - SIEMPRE)
 
-1. Obtener archivos modificados:
+1. Obtener archivos modificados (usando rama base de envoy-review.md):
 ```bash
-git diff --name-only HEAD~1..HEAD
+git diff --name-only <base>...HEAD | grep -v '^\.claude/'
 ```
 
 2. Buscar términos prohibidos en cada archivo

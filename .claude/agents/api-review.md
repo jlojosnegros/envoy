@@ -20,7 +20,7 @@ Hay cambios en el directorio `api/`
 Verificar que los valores por defecto no causan cambios de comportamiento:
 
 ```bash
-git diff HEAD~1..HEAD -- 'api/**/*.proto' | grep -E 'default|= [0-9]|= true|= false'
+git diff <base>...HEAD -- 'api/**/*.proto' | grep -E 'default|= [0-9]|= true|= false'
 ```
 
 **Preguntas a considerar:**
@@ -31,7 +31,7 @@ git diff HEAD~1..HEAD -- 'api/**/*.proto' | grep -E 'default|= [0-9]|= true|= fa
 Verificar presencia de reglas protoc-gen-validate:
 
 ```bash
-git diff HEAD~1..HEAD -- 'api/**/*.proto' | grep -E '\[(validate\.|rules)'
+git diff <base>...HEAD -- 'api/**/*.proto' | grep -E '\[(validate\.|rules)'
 ```
 
 **Campos a verificar:**
@@ -43,7 +43,7 @@ git diff HEAD~1..HEAD -- 'api/**/*.proto' | grep -E '\[(validate\.|rules)'
 Si hay campos deprecated, verificar documentación:
 
 ```bash
-git diff HEAD~1..HEAD -- 'api/**/*.proto' | grep -i 'deprecated'
+git diff <base>...HEAD -- 'api/**/*.proto' | grep -i 'deprecated'
 ```
 
 **Si hay deprecated:**
@@ -63,7 +63,7 @@ Verificar cumplimiento con api/STYLE.md:
 Verificar si debería usar TypedExtensionConfig:
 
 ```bash
-git diff HEAD~1..HEAD -- 'api/**/*.proto' | grep -E 'oneof|Any|typed_config'
+git diff <base>...HEAD -- 'api/**/*.proto' | grep -E 'oneof|Any|typed_config'
 ```
 
 **Considerar:**
@@ -160,7 +160,7 @@ ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh api_compat'
 
 1. Identificar archivos proto modificados:
 ```bash
-git diff --name-only HEAD~1..HEAD | grep '\.proto$'
+git diff --name-only <base>...HEAD | grep '\.proto$'
 ```
 
 2. Analizar diff para cada verificación estática

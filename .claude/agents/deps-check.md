@@ -24,7 +24,7 @@ ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh deps' 2>&1 
 Si se añade una nueva dependencia, debe estar documentada:
 
 ```bash
-git diff HEAD~1..HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+'
+git diff <base>...HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+'
 ```
 
 **Verificar:**
@@ -51,7 +51,7 @@ El comando deps verifica vulnerabilidades conocidas:
 Las dependencias deben estar pinned a versiones específicas:
 
 ```bash
-git diff HEAD~1..HEAD | grep -E 'version|sha256|commit'
+git diff <base>...HEAD | grep -E 'version|sha256|commit'
 ```
 
 ### 5. Dependencias Transitivas - INFO
@@ -63,10 +63,10 @@ Antes de ejecutar Docker, verificar cambios básicos:
 
 ```bash
 # Ver qué archivos de dependencias cambiaron
-git diff --name-only HEAD~1..HEAD | grep -E '(BUILD|\.bzl|bazel/)'
+git diff --name-only <base>...HEAD | grep -E '(BUILD|\.bzl|bazel/)'
 
 # Ver nuevas dependencias añadidas
-git diff HEAD~1..HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+.*name.*='
+git diff <base>...HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+.*name.*='
 ```
 
 ## Formato de Salida
@@ -112,7 +112,7 @@ git diff HEAD~1..HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+.*name.*
 
 1. Verificar si hay cambios en archivos de dependencias:
 ```bash
-git diff --name-only HEAD~1..HEAD | grep -E '(BUILD|\.bzl|bazel/)'
+git diff --name-only <base>...HEAD | grep -E '(BUILD|\.bzl|bazel/)'
 ```
 
 2. Si no hay cambios, saltar este agente

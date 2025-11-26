@@ -19,7 +19,7 @@ Si es una nueva extensión, verificar sponsor:
 
 **Detectar nueva extensión:**
 ```bash
-git diff --name-only --diff-filter=A HEAD~1..HEAD | grep -E 'source/extensions/.*/[^/]+\.(cc|h)$'
+git diff --name-only --diff-filter=A <base>...HEAD | grep -E 'source/extensions/.*/[^/]+\.(cc|h)$'
 ```
 
 **Si es nueva:**
@@ -35,7 +35,7 @@ Por favor, asegúrate de tener sponsor y reviewers antes del PR.
 Si hay nueva extensión, debe actualizarse CODEOWNERS:
 
 ```bash
-git diff HEAD~1..HEAD -- CODEOWNERS | grep -E 'extensions|contrib'
+git diff <base>...HEAD -- CODEOWNERS | grep -E 'extensions|contrib'
 ```
 
 **Si hay nueva extensión sin entrada en CODEOWNERS:**
@@ -50,7 +50,7 @@ Sugerencia: Añadir entrada en CODEOWNERS:
 Verificar que envoy_cc_extension tiene security_posture:
 
 ```bash
-git diff HEAD~1..HEAD -- 'source/extensions/**/BUILD' | grep -E 'envoy_cc_extension|security_posture'
+git diff <base>...HEAD -- 'source/extensions/**/BUILD' | grep -E 'envoy_cc_extension|security_posture'
 ```
 
 **Tags válidos:**
@@ -64,7 +64,7 @@ git diff HEAD~1..HEAD -- 'source/extensions/**/BUILD' | grep -E 'envoy_cc_extens
 Verificar que tiene status tag:
 
 ```bash
-git diff HEAD~1..HEAD -- 'source/extensions/**/BUILD' | grep -E 'status\s*='
+git diff <base>...HEAD -- 'source/extensions/**/BUILD' | grep -E 'status\s*='
 ```
 
 **Tags válidos:**
@@ -76,7 +76,7 @@ git diff HEAD~1..HEAD -- 'source/extensions/**/BUILD' | grep -E 'status\s*='
 Para contrib extensions, verificar entrada en metadata:
 
 ```bash
-git diff HEAD~1..HEAD -- 'contrib/extensions_metadata.yaml'
+git diff <base>...HEAD -- 'contrib/extensions_metadata.yaml'
 ```
 
 ### 6. Extensión Contrib vs Core - INFO
@@ -94,7 +94,7 @@ INFO: Esta es una extensión contrib
 Si la extensión usa features específicas de plataforma:
 
 ```bash
-git diff HEAD~1..HEAD | grep -E '#ifdef|#if defined|__linux__|__APPLE__|_WIN32'
+git diff <base>...HEAD | grep -E '#ifdef|#if defined|__linux__|__APPLE__|_WIN32'
 ```
 
 **Si hay código específico de plataforma:**
@@ -162,7 +162,7 @@ envoy_cc_extension(
 
 1. Identificar cambios en extensiones:
 ```bash
-git diff --name-only HEAD~1..HEAD | grep -E '(source/extensions|contrib)'
+git diff --name-only <base>...HEAD | grep -E '(source/extensions|contrib)'
 ```
 
 2. Determinar si es extensión nueva o modificación

@@ -22,7 +22,7 @@ Verificar que los cambios de documentación y release notes cumplen con los requ
 
 **Verificar:**
 ```bash
-git diff --name-only HEAD~1..HEAD | grep -q "changelogs/current.yaml"
+git diff --name-only <base>...HEAD | grep -q "changelogs/current.yaml"
 ```
 
 **Si falta y debería existir:**
@@ -63,7 +63,7 @@ Si hay cambios en `changelogs/current.yaml`, verificar:
 
 ```bash
 # Verificar si hay cambios en docs
-git diff --name-only HEAD~1..HEAD | grep -q "^docs/"
+git diff --name-only <base>...HEAD | grep -q "^docs/"
 ```
 
 ### 4. Breaking Changes Documentados (ERROR)
@@ -74,7 +74,7 @@ git diff --name-only HEAD~1..HEAD | grep -q "^docs/"
 
 ```bash
 # Buscar en diff por deprecated
-git diff HEAD~1..HEAD | grep -i "deprecated"
+git diff <base>...HEAD | grep -i "deprecated"
 ```
 
 ### 5. Runtime Guard Documentado (WARNING)
@@ -85,7 +85,7 @@ git diff HEAD~1..HEAD | grep -i "deprecated"
 
 **Buscar en diff:**
 ```bash
-git diff HEAD~1..HEAD | grep -E "reloadable_features\.|envoy\.reloadable_features"
+git diff <base>...HEAD | grep -E "reloadable_features\.|envoy\.reloadable_features"
 ```
 
 ### 6. Gramática y Puntuación (INFO)
@@ -139,14 +139,14 @@ Un cambio es user-facing si:
 
 1. Obtener archivos modificados:
 ```bash
-git diff --name-only HEAD~1..HEAD
+git diff --name-only <base>...HEAD
 ```
 
 2. Clasificar tipo de cambio
 
 3. Verificar changelog:
 ```bash
-git diff HEAD~1..HEAD -- changelogs/current.yaml
+git diff <base>...HEAD -- changelogs/current.yaml
 ```
 
 4. Si es user-facing y no hay changelog, ERROR

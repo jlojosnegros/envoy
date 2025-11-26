@@ -44,7 +44,7 @@ Esperado: test/common/foo/bar_test.cc
 Identificar funciones/métodos nuevos en el diff:
 
 ```bash
-git diff HEAD~1..HEAD -- '*.cc' '*.h' | grep -E '^\+.*\b(void|bool|int|string|Status)\s+\w+\s*\('
+git diff <base>...HEAD -- '*.cc' '*.h' | grep -E '^\+.*\b(void|bool|int|string|Status)\s+\w+\s*\('
 ```
 
 Para cada función nueva, verificar si existe test que la referencie:
@@ -58,8 +58,8 @@ grep -r "functionName" test/
 Si hay archivos nuevos en `source/`, debe haber archivos nuevos en `test/`:
 
 ```bash
-git diff --name-only --diff-filter=A HEAD~1..HEAD | grep '^source/'
-git diff --name-only --diff-filter=A HEAD~1..HEAD | grep '^test/'
+git diff --name-only --diff-filter=A <base>...HEAD | grep '^source/'
+git diff --name-only --diff-filter=A <base>...HEAD | grep '^test/'
 ```
 
 #### 4. Análisis de Branches de Código
@@ -188,7 +188,7 @@ Después del build, analizar el reporte de coverage para los archivos modificado
 
 1. Obtener lista de archivos modificados en `source/`:
 ```bash
-git diff --name-only HEAD~1..HEAD | grep '^source/.*\.cc$'
+git diff --name-only <base>...HEAD | grep '^source/.*\.cc$'
 ```
 
 2. Para cada archivo, buscar test correspondiente
