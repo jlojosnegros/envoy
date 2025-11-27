@@ -26,6 +26,7 @@ Esta variable es **OBLIGATORIA** para ejecutar comandos que requieren Docker.
 - `--coverage-full` : Ejecutar build de coverage completo (proceso lento)
 - `--skip-docker` : Solo ejecutar checks que no requieren Docker
 - `--full-lint` : Ejecutar clang-tidy completo (proceso lento)
+- `--deep-analysis` : Ejecutar análisis profundo con sanitizers ASAN/MSAN/TSAN (proceso muy lento)
 - `--only=<agentes>` : Ejecutar solo agentes específicos (comma-separated)
 - `--fix` : Permitir correcciones automáticas donde sea posible
 - `--save-report` : Guardar reporte en archivo
@@ -53,6 +54,7 @@ OPCIONES:
   --skip-docker           Omitir checks que requieren Docker
   --coverage-full         Ejecutar build de coverage completo (~1 hora)
   --full-lint             Ejecutar clang-tidy completo (~30 min)
+  --deep-analysis         Ejecutar sanitizers ASAN/MSAN/TSAN (~horas)
   --only=<checks>         Solo ejecutar checks específicos (comma-separated)
   --fix                   Aplicar correcciones automáticas donde sea posible
   --save-report           Guardar reporte en archivo
@@ -65,11 +67,17 @@ CHECKS DISPONIBLES:
     - docs-changelog      Verifica release notes si aplica
     - extension-review    Verifica política de extensiones si aplica
     - test-coverage       Verifica existencia de tests (heurístico)
+    - code-expert         Análisis experto C++: memoria, seguridad, patrones
+    - security-audit      Auditoría de seguridad: CVEs en dependencias
 
   Con Docker (requieren --build-dir):
     - code-format         Verifica formateo con clang-format (~2-5 min)
     - api-compat          Verifica breaking changes en API (~5-15 min)
     - deps                Verifica dependencias (~5-15 min)
+    - security-deps       Validación de dependencias con Docker (~5 min)
+
+  Con Docker (requieren flags especiales):
+    - deep-analysis       Sanitizers ASAN/MSAN/TSAN (--deep-analysis, ~horas)
 
 EJEMPLOS:
   /envoy-review --help
@@ -149,6 +157,16 @@ Estos checks se ejecutan SIEMPRE, no requieren Docker:
 4. **docs-changelog**: Si `has_source_changes` o `has_api_changes` - EJECUTAR verificación de changelogs/current.yaml
 5. **extension-review**: Si `has_extension_changes` (cambios en `source/extensions/` o `contrib/`)
 6. **test-coverage (heurístico)**: Si `has_source_changes` - verificar que existen tests correspondientes
+7. **code-expert (heurístico)**: Si `has_source_changes` - EJECUTAR análisis experto del diff C++:
+   - Detectar memory leaks, buffer overflows, null derefs
+   - Detectar patrones inseguros y APIs deprecated de Envoy
+   - Solo reportar hallazgos con confianza ≥ 70%
+   - Ver `.claude/agents/code-expert.md` para detalles
+8. **security-audit (Fase 1)**: EJECUTAR consulta de CVEs:
+   - Leer dependencias de `bazel/repository_locations.bzl`
+   - Consultar APIs externas (OSV, GitHub, NVD) para CVEs conocidos
+   - Si APIs no disponibles, marcar para Fase 2 con Docker
+   - Ver `.claude/agents/security-audit.md` para detalles
 
 ### Paso 5: Ejecutar checks con Docker
 
@@ -178,10 +196,26 @@ Checks con Docker a ejecutar:
    ```bash
    ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh coverage'
    ```
-5. **code-lint (completo)**: Solo si --full-lint 
+5. **code-lint (completo)**: Solo si --full-lint
    ```bash
    ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh clang-tidy'
    ```
+
+6. **security-audit (Fase 2)**: Si hay cambios en dependencias - EJECUTAR validación:
+   ```bash
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh 'bazel run //tools/dependency:validate'
+   ```
+
+7. **code-expert (deep)**: Solo si --deep-analysis - EJECUTAR sanitizers:
+   ```bash
+   # ASAN (Address Sanitizer)
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh asan'
+
+   # TSAN (Thread Sanitizer)
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh tsan'
+   ```
+   **ADVERTENCIA**: Estos comandos tardan HORAS. Confirmar con usuario antes de ejecutar.
+
 ### Paso 5.5: Verificar ejecución de checks críticos (CHECKPOINT)
 
 **ANTES de generar el reporte**, verificar que se ejecutaron todos los checks requeridos:
@@ -223,9 +257,13 @@ Consolida todos los resultados en formato:
 | Dev Environment | ✅ Ejecutado | - | hooks check |
 | Inclusive Language | ✅ Ejecutado | - | grep diff |
 | Docs/Changelog | ✅ Ejecutado | - | file check |
+| Code Expert | ✅ Ejecutado | - | análisis heurístico C++ |
+| Security Audit | ✅ Ejecutado | - | CVE check (APIs externas) |
 | Code Format | ✅ Ejecutado / ⏭️ Omitido (--skip-docker) / ❌ No aplica | Xm Xs | do_ci.sh format |
 | API Compat | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh api_compat |
 | Dependencies | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh deps |
+| Security Deps | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | dependency:validate |
+| Deep Analysis | ✅ Ejecutado / ⏭️ Omitido (requiere --deep-analysis) | Xh Xm | ASAN/TSAN |
 
 ## Resumen Ejecutivo
 
@@ -235,6 +273,8 @@ Consolida todos los resultados en formato:
 | Dev Environment | X | Y | Z |
 | Code Format | X | Y | Z |
 | Code Lint | X | Y | Z |
+| Code Expert | X | Y | Z |
+| Security Audit | X | Y | Z |
 | Test Coverage | X | Y | Z |
 | Docs/Changelog | X | Y | Z |
 | API Review | X | Y | Z |

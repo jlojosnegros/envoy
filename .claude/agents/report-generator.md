@@ -27,6 +27,8 @@ Resultados de todos los sub-agentes ejecutados en formato JSON.
 | Dev Environment | X | Y | Z |
 | Code Format | X | Y | Z |
 | Code Lint | X | Y | Z |
+| Code Expert | X | Y | Z |
+| Security Audit | X | Y | Z |
 | Test Coverage | X | Y | Z |
 | Docs/Changelog | X | Y | Z |
 | API Review | X | Y | Z |
@@ -202,6 +204,8 @@ Agrupar hallazgos por el agente que los generó:
 - dev-env → "Dev Environment"
 - code-format → "Code Format"
 - code-lint → "Code Lint"
+- code-expert → "Code Expert"
+- security-audit → "Security Audit"
 - test-coverage → "Test Coverage"
 - docs-changelog → "Docs/Changelog"
 - api-review → "API Review"
