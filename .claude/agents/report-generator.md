@@ -29,6 +29,7 @@ Resultados de todos los sub-agentes ejecutados en formato JSON.
 | Code Lint | X | Y | Z |
 | Code Expert | X | Y | Z |
 | Security Audit | X | Y | Z |
+| Unit Tests | X | Y | Z |
 | Test Coverage | X | Y | Z |
 | Docs/Changelog | X | Y | Z |
 | API Review | X | Y | Z |
@@ -206,6 +207,7 @@ Agrupar hallazgos por el agente que los generó:
 - code-lint → "Code Lint"
 - code-expert → "Code Expert"
 - security-audit → "Security Audit"
+- unit-tests → "Unit Tests"
 - test-coverage → "Test Coverage"
 - docs-changelog → "Docs/Changelog"
 - api-review → "API Review"

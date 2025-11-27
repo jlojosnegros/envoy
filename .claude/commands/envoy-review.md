@@ -27,6 +27,7 @@ Esta variable es **OBLIGATORIA** para ejecutar comandos que requieren Docker.
 - `--skip-docker` : Solo ejecutar checks que no requieren Docker
 - `--full-lint` : Ejecutar clang-tidy completo (proceso lento)
 - `--deep-analysis` : Ejecutar análisis profundo con sanitizers ASAN/MSAN/TSAN (proceso muy lento)
+- `--skip-tests` : Omitir ejecución de tests unitarios
 - `--only=<agentes>` : Ejecutar solo agentes específicos (comma-separated)
 - `--fix` : Permitir correcciones automáticas donde sea posible
 - `--save-report` : Guardar reporte en archivo
@@ -55,6 +56,7 @@ OPCIONES:
   --coverage-full         Ejecutar build de coverage completo (~1 hora)
   --full-lint             Ejecutar clang-tidy completo (~30 min)
   --deep-analysis         Ejecutar sanitizers ASAN/MSAN/TSAN (~horas)
+  --skip-tests            Omitir ejecución de tests unitarios
   --only=<checks>         Solo ejecutar checks específicos (comma-separated)
   --fix                   Aplicar correcciones automáticas donde sea posible
   --save-report           Guardar reporte en archivo
@@ -75,6 +77,7 @@ CHECKS DISPONIBLES:
     - api-compat          Verifica breaking changes en API (~5-15 min)
     - deps                Verifica dependencias (~5-15 min)
     - security-deps       Validación de dependencias con Docker (~5 min)
+    - unit-tests          Ejecuta tests impactados (~5-30 min, --skip-tests para omitir)
 
   Con Docker (requieren flags especiales):
     - deep-analysis       Sanitizers ASAN/MSAN/TSAN (--deep-analysis, ~horas)
@@ -216,6 +219,16 @@ Checks con Docker a ejecutar:
    ```
    **ADVERTENCIA**: Estos comandos tardan HORAS. Confirmar con usuario antes de ejecutar.
 
+8. **unit-tests**: Si `has_source_changes` y NO `--skip-tests` - EJECUTAR tests impactados:
+   - Identificar tests relacionados con archivos modificados (híbrido: directorio + bazel query)
+   - Ejecutar con timeout de 30 minutos:
+   ```bash
+   ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh 'bazel test --test_timeout=1800 --test_output=errors <tests>'
+   ```
+   - Parsear resultados: PASSED, FAILED, TIMEOUT
+   - Para cada test fallido: generar explicación y sugerencia de solución
+   - Ver `.claude/agents/unit-tests.md` para detalles
+
 ### Paso 5.5: Verificar ejecución de checks críticos (CHECKPOINT)
 
 **ANTES de generar el reporte**, verificar que se ejecutaron todos los checks requeridos:
@@ -263,6 +276,7 @@ Consolida todos los resultados en formato:
 | API Compat | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh api_compat |
 | Dependencies | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh deps |
 | Security Deps | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | dependency:validate |
+| Unit Tests | ✅ Ejecutado / ⏭️ Omitido (--skip-tests) / ❌ No aplica | Xm Xs | bazel test |
 | Deep Analysis | ✅ Ejecutado / ⏭️ Omitido (requiere --deep-analysis) | Xh Xm | ASAN/TSAN |
 
 ## Resumen Ejecutivo
@@ -275,6 +289,7 @@ Consolida todos los resultados en formato:
 | Code Lint | X | Y | Z |
 | Code Expert | X | Y | Z |
 | Security Audit | X | Y | Z |
+| Unit Tests | X | Y | Z |
 | Test Coverage | X | Y | Z |
 | Docs/Changelog | X | Y | Z |
 | API Review | X | Y | Z |
