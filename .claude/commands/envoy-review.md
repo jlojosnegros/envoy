@@ -95,7 +95,16 @@ EJEMPLOS:
 ### Paso 1: Parsear argumentos
 Analiza `$ARGUMENTS` para extraer:
 - ENVOY_DOCKER_BUILD_DIR (si se proporciona como primer argumento o con --build-dir=)
-- Flags (--base, --coverage-full, --skip-docker, --only, --fix, --save-report)
+- Flags:
+  - `--base=<branch>` - Rama base para comparar
+  - `--coverage-full` - Ejecutar coverage completo
+  - `--skip-docker` - Omitir checks que requieren Docker
+  - `--skip-tests` - Omitir ejecución de tests unitarios
+  - `--full-lint` - Ejecutar clang-tidy completo
+  - `--deep-analysis` - Ejecutar sanitizers ASAN/MSAN/TSAN
+  - `--only=<agentes>` - Solo ejecutar agentes específicos (comma-separated)
+  - `--fix` - Aplicar correcciones automáticas
+  - `--save-report` - Guardar reporte en archivo
 
 ### Paso 2: Detectar cambios (ANTES de verificar Docker)
 
@@ -152,6 +161,11 @@ Si `requires_docker_checks` es TRUE y no se usa --skip-docker:
 
 ### Paso 4: Ejecutar checks sin Docker
 
+**OPTIMIZACIÓN: EJECUCIÓN PARALELA**
+Los checks sin Docker son rápidos y pueden ejecutarse en paralelo:
+- Usar múltiples llamadas a herramientas en un solo mensaje
+- Agrupar comandos git/grep que no dependen entre sí
+
 Estos checks se ejecutan SIEMPRE, no requieren Docker:
 
 1. **pr-metadata**: EJECUTAR `git log` para verificar DCO, formato de título
@@ -177,6 +191,22 @@ Estos checks se ejecutan SIEMPRE, no requieren Docker:
 - `requires_docker_checks` es TRUE
 - `skip_docker` es FALSE
 - ENVOY_DOCKER_BUILD_DIR está definido (verificado en Paso 3)
+
+**EJECUCIÓN SECUENCIAL**
+Los checks con Docker deben ejecutarse uno a uno porque:
+- Comparten el mismo contenedor Docker
+- Compiten por recursos de CPU/memoria
+- Los logs se mezclarían si se ejecutan en paralelo
+
+**Orden recomendado** (de más rápido a más lento):
+1. code-format (~2-5 min)
+2. api-compat (~5-15 min, solo si hay cambios en api/)
+3. deps (~5-15 min, solo si hay cambios en bazel/)
+4. security-deps (~5 min)
+5. unit-tests (~5-30 min)
+6. code-lint (solo con --full-lint, ~30 min)
+7. coverage (solo con --coverage-full, ~1+ hora)
+8. deep-analysis (solo con --deep-analysis, horas)
 
 Checks con Docker a ejecutar:
 
@@ -373,6 +403,71 @@ Busca y reporta como ERROR cualquier uso de:
 - slave (usar: secondary/replica)
 
 **Excluir**: Archivos en `.claude/` (documentación del agente).
+
+## Manejo de Errores
+
+### Errores de Docker
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| `docker: command not found` | Docker no instalado | Instalar Docker o usar --skip-docker |
+| `permission denied` | Usuario sin permisos Docker | Añadir usuario al grupo docker o usar sudo |
+| `Cannot connect to Docker daemon` | Docker no está corriendo | Iniciar servicio Docker |
+| `No space left on device` | Disco lleno | Limpiar espacio o usar otro directorio |
+
+### Errores de Red
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| `buf.build: connection refused` | API no accesible | Reintentar más tarde o usar --skip-docker |
+| `osv.dev: timeout` | CVE API lenta | Usar fallback a herramientas locales |
+| `Failed to pull image` | Sin conexión a internet | Verificar conectividad |
+
+### Errores de Bazel
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| `Build failed` | Error de compilación | Revisar logs, corregir código |
+| `Test timeout` | Test muy lento | Aumentar timeout o revisar test |
+| `No targets found` | Path incorrecto | Verificar paths de tests |
+
+### Comportamiento ante errores
+
+1. **Error recuperable**: Continuar con siguientes checks, reportar error al final
+2. **Error bloqueante**: Detenerse, informar al usuario, ofrecer alternativas
+3. **Timeout**: Abortar operación actual, continuar con siguientes
+
+**Siempre incluir en el reporte:**
+- Qué check falló
+- Mensaje de error
+- Sugerencia de cómo resolver
+
+## Mensajes de Progreso
+
+Mantener al usuario informado con mensajes claros:
+
+```
+[1/8] ⏳ Analizando PR metadata...
+[1/8] ✅ PR metadata: 0 errores, 1 warning
+
+[2/8] ⏳ Verificando entorno de desarrollo...
+[2/8] ✅ Dev environment: OK
+
+[3/8] ⏳ Buscando términos prohibidos...
+[3/8] ✅ Inclusive language: OK
+
+[4/8] ⏳ Ejecutando format check (esto puede tardar 2-5 minutos)...
+      Comando: ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
+[4/8] ✅ Format check: PASS (3m 24s)
+
+[5/8] ⏳ Ejecutando tests unitarios (timeout: 30 min)...
+[5/8] ❌ Unit tests: 2 fallidos de 25 (7m 12s)
+
+...
+
+📊 Generando reporte final...
+📝 Reporte guardado en: /path/to/report.md
+```
 
 ## Inicio
 

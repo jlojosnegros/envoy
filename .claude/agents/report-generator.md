@@ -119,10 +119,45 @@ Sugerencias de mejora que no son obligatorias:
 
 ```bash
 # Formateo de código C++
-ENVOY_DOCKER_BUILD_DIR=<tu_directorio> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
+ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
 
 # Formateo de protos
-ENVOY_DOCKER_BUILD_DIR=<tu_directorio> ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_proto_format'
+ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_proto_format'
+
+# Añadir DCO sign-off a commits
+git commit --amend -s
+# Para múltiples commits:
+git rebase -i HEAD~N  # y añadir -s a cada uno
+
+# Ejecutar tests específicos localmente
+ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh 'bazel test //test/path/to:test'
+
+# Verificar dependencias
+ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh 'bazel run //tools/dependency:validate'
+```
+
+### Template para Release Notes
+
+Si faltan release notes, añadir en `changelogs/current.yaml`:
+```yaml
+# Para nueva feature:
+new_features:
+- area: <subsystem>
+  change: |
+    Added <descripción de la feature>.
+
+# Para bug fix:
+bug_fixes:
+- area: <subsystem>
+  change: |
+    Fixed <descripción del bug>.
+
+# Para cambio de comportamiento:
+behavior_changes:
+- area: <subsystem>
+  change: |
+    Changed <descripción del cambio>. This can be reverted by setting
+    runtime guard ``envoy.reloadable_features.<flag>`` to false.
 ```
 
 ### Correcciones Manuales Requeridas
@@ -137,8 +172,13 @@ ENVOY_DOCKER_BUILD_DIR=<tu_directorio> ./ci/run_envoy_docker.sh './ci/do_ci.sh f
 
 [Si algún sub-agente no se ejecutó, listarlo aquí con la razón]
 
-- **clang-tidy**: No ejecutado (requiere --lint flag o se ejecutará en CI)
-- **coverage (full)**: No ejecutado (requiere --coverage-full flag)
+| Check | Razón | Cómo ejecutar |
+|-------|-------|---------------|
+| clang-tidy | Requiere --full-lint | `/envoy-review --full-lint` |
+| coverage (full) | Requiere --coverage-full | `/envoy-review --coverage-full` |
+| deep-analysis | Requiere --deep-analysis | `/envoy-review --deep-analysis` |
+| unit-tests | Omitido con --skip-tests | `/envoy-review` (por defecto) |
+| security-deps | Sin cambios en dependencias | Automático si hay cambios en bazel/ |
 
 ---
 
@@ -154,6 +194,29 @@ ENVOY_DOCKER_BUILD_DIR=<tu_directorio> ./ci/run_envoy_docker.sh './ci/do_ci.sh f
 
 ## Información Adicional
 
+### Unit Tests
+| Métrica | Valor |
+|---------|-------|
+| Tests ejecutados | X |
+| Pasados | X |
+| Fallidos | X |
+| Timeout | X |
+| Duración | Xm Xs |
+
+### Code Expert Analysis
+| Métrica | Valor |
+|---------|-------|
+| Archivos analizados | X |
+| Confianza promedio | X% |
+| Categorías detectadas | memory, buffer, threading |
+
+### Security Audit
+| Métrica | Valor |
+|---------|-------|
+| Dependencias verificadas | X |
+| CVEs encontrados | X |
+| Severidad máxima | critical/high/medium/low |
+
 ### Coverage Estimado (Modo Semi)
 - **Confianza**: X%
 - **Archivos sin test aparente**: [lista]
@@ -163,7 +226,8 @@ Los logs detallados están en:
 ```
 ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/
 ├── YYYYMMDDHHMM-format.log
-├── YYYYMMDDHHMM-clang-tidy.log
+├── YYYYMMDDHHMM-unit-tests.log
+├── YYYYMMDDHHMM-security-deps.log
 └── ...
 ```
 
