@@ -98,7 +98,7 @@ done
     },
     {
       "type": "ERROR",
-      "check": "clang_tidy",
+      "check": "clang-tidy",
       "message": "Variable no inicializada",
       "location": "source/common/bar.cc:456",
       "suggestion": "Inicializar variable antes de usar"
