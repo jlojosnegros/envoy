@@ -1,113 +1,113 @@
-# Sub-agente: Documentation and Changelog Review
+# Sub-agent: Documentation and Changelog Review
 
-## Propósito
-Verificar que los cambios de documentación y release notes cumplen con los requisitos de Envoy.
+## Purpose
+Verify that documentation and release notes changes meet Envoy requirements.
 
-## ACCIÓN: EJECUTAR SIEMPRE si hay cambios en source/ o api/ (comandos git instantáneos, sin Docker)
+## ACTION: ALWAYS EXECUTE if there are changes in source/ or api/ (instant git commands, no Docker)
 
-## Entrada Esperada
-- Lista de archivos modificados
-- Tipo de cambio detectado (user-facing, API, extension, etc.)
+## Expected Input
+- List of modified files
+- Detected change type (user-facing, API, extension, etc.)
 
-## Verificaciones
+## Verifications
 
-### 1. Release Notes Actualizadas (ERROR condicional)
+### 1. Release Notes Updated (conditional ERROR)
 
-**Cuándo es ERROR:**
-- Cambio user-facing (modifica comportamiento visible)
-- Cambio en API (archivos en `api/envoy/`)
-- Nueva feature o extensión
-- Bug fix importante
-- Deprecación
+**When it's ERROR:**
+- User-facing change (modifies visible behavior)
+- API change (files in `api/envoy/`)
+- New feature or extension
+- Important bug fix
+- Deprecation
 
-**Verificar:**
+**Verify:**
 ```bash
 git diff --name-only <base>...HEAD | grep -q "changelogs/current.yaml"
 ```
 
-**Si falta y debería existir:**
+**If missing and should exist:**
 ```
-ERROR: Release notes no actualizadas para cambio user-facing
-Ubicación: changelogs/current.yaml
-Sugerencia: Añadir entrada en la sección apropiada:
-- behavior_changes: Para cambios de comportamiento incompatibles
-- minor_behavior_changes: Para cambios menores de comportamiento
-- bug_fixes: Para correcciones de bugs
-- removed_config_or_runtime: Para configuración eliminada
-- new_features: Para nuevas funcionalidades
-- deprecated: Para deprecaciones
+ERROR: Release notes not updated for user-facing change
+Location: changelogs/current.yaml
+Suggestion: Add entry in appropriate section:
+- behavior_changes: For incompatible behavior changes
+- minor_behavior_changes: For minor behavior changes
+- bug_fixes: For bug fixes
+- removed_config_or_runtime: For removed configuration
+- new_features: For new functionality
+- deprecated: For deprecations
 ```
 
-### 2. Formato de Release Notes (WARNING)
+### 2. Release Notes Format (WARNING)
 
-Si hay cambios en `changelogs/current.yaml`, verificar:
+If there are changes in `changelogs/current.yaml`, verify:
 
-**Estructura correcta:**
+**Correct structure:**
 ```yaml
 - area: subsystem
   change: |
-    Descripción del cambio con :ref:`links` apropiados.
-    Puede mencionar runtime guard si aplica.
+    Description of change with appropriate :ref:`links`.
+    May mention runtime guard if applicable.
 ```
 
-**Verificaciones:**
-- `area:` presente y válido
-- `change:` presente y no vacío
-- Links en formato RST `:ref:\`texto <referencia>\``
+**Verifications:**
+- `area:` present and valid
+- `change:` present and not empty
+- Links in RST format `:ref:\`text <reference>\``
 
-### 3. Documentación para Cambios de Comportamiento (WARNING)
+### 3. Documentation for Behavior Changes (WARNING)
 
-**Si hay cambios en `source/` que afectan comportamiento:**
-- Verificar si hay cambios correspondientes en `docs/`
-- Especialmente para nuevas features o cambios de API
+**If there are changes in `source/` that affect behavior:**
+- Verify if there are corresponding changes in `docs/`
+- Especially for new features or API changes
 
 ```bash
-# Verificar si hay cambios en docs
+# Verify if there are changes in docs
 git diff --name-only <base>...HEAD | grep -q "^docs/"
 ```
 
-### 4. Breaking Changes Documentados (ERROR)
+### 4. Breaking Changes Documented (ERROR)
 
-**Si hay deprecaciones:**
-- Verificar entrada en `deprecated` section de changelog
-- Verificar que se documenta la alternativa
+**If there are deprecations:**
+- Verify entry in `deprecated` section of changelog
+- Verify that alternative is documented
 
 ```bash
-# Buscar en diff por deprecated
+# Search in diff for deprecated
 git diff <base>...HEAD | grep -i "deprecated"
 ```
 
-### 5. Runtime Guard Documentado (WARNING)
+### 5. Runtime Guard Documented (WARNING)
 
-**Si hay nuevo runtime guard:**
-- Debe estar documentado en release notes
-- Debe explicar cómo revertir comportamiento
+**If there's a new runtime guard:**
+- Must be documented in release notes
+- Must explain how to revert behavior
 
-**Buscar en diff:**
+**Search in diff:**
 ```bash
 git diff <base>...HEAD | grep -E "reloadable_features\.|envoy\.reloadable_features"
 ```
 
-### 6. Gramática y Puntuación (INFO)
+### 6. Grammar and Punctuation (INFO)
 
-**En archivos de documentación modificados:**
-- Verificar uso de inglés correcto
-- Un espacio después de punto
-- Sin typos obvios
+**In modified documentation files:**
+- Verify correct English usage
+- One space after period
+- No obvious typos
 
-**Nota:** Esta es una verificación heurística, no exhaustiva.
+**Note:** This is a heuristic verification, not exhaustive.
 
-## Detección de Cambio User-Facing
+## User-Facing Change Detection
 
-Un cambio es user-facing si:
-1. Modifica archivos en `api/envoy/` (cambio de API)
-2. Añade/modifica extensiones en `source/extensions/`
-3. Contiene "runtime guard" o "reloadable_feature"
-4. Modifica comportamiento de red/HTTP/routing
-5. Añade nuevas estadísticas o métricas
-6. Modifica configuración
+A change is user-facing if:
+1. Modifies files in `api/envoy/` (API change)
+2. Adds/modifies extensions in `source/extensions/`
+3. Contains "runtime guard" or "reloadable_feature"
+4. Modifies network/HTTP/routing behavior
+5. Adds new statistics or metrics
+6. Modifies configuration
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -116,9 +116,9 @@ Un cambio es user-facing si:
     {
       "type": "ERROR|WARNING|INFO",
       "check": "release_notes",
-      "message": "Release notes no actualizadas para cambio user-facing",
+      "message": "Release notes not updated for user-facing change",
       "location": "changelogs/current.yaml",
-      "suggestion": "Añadir entrada describiendo: [descripción del cambio]"
+      "suggestion": "Add entry describing: [change description]"
     }
   ],
   "summary": {
@@ -135,24 +135,24 @@ Un cambio es user-facing si:
 }
 ```
 
-## Ejecución
+## Execution
 
-1. Obtener archivos modificados:
+1. Get modified files:
 ```bash
 git diff --name-only <base>...HEAD
 ```
 
-2. Clasificar tipo de cambio
+2. Classify change type
 
-3. Verificar changelog:
+3. Verify changelog:
 ```bash
 git diff <base>...HEAD -- changelogs/current.yaml
 ```
 
-4. Si es user-facing y no hay changelog, ERROR
+4. If user-facing and no changelog, ERROR
 
-5. Si hay changelog, verificar formato
+5. If there's changelog, verify format
 
-6. Buscar runtime guards no documentados
+6. Search for undocumented runtime guards
 
-7. Generar reporte
+7. Generate report

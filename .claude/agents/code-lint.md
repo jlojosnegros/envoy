@@ -1,86 +1,86 @@
-# Sub-agente: Code Lint Check (clang-tidy)
+# Sub-agent: Code Lint Check (clang-tidy)
 
-## Propósito
-Ejecutar análisis estático con clang-tidy y verificar inclusive language.
+## Purpose
+Run static analysis with clang-tidy and verify inclusive language.
 
-## ACCIÓN:
-- **Inclusive Language**: EJECUTAR SIEMPRE (< 1 segundo, sin Docker)
-- **clang-tidy completo**: Solo con flag --full-lint (tarda horas)
+## ACTION:
+- **Inclusive Language**: ALWAYS EXECUTE (< 1 second, no Docker)
+- **Full clang-tidy**: Only with --full-lint flag (takes hours)
 
-## Requiere Docker: SI (para clang-tidy completo)
+## Requires Docker: YES (for full clang-tidy)
 
-## Comando CI Principal
+## Main CI Command
 ```bash
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh clang-tidy' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/YYYYMMDDHHMM-clang-tidy.log
 ```
 
-**ADVERTENCIA:** Este comando tarda MUCHO tiempo (puede ser horas). Se recomienda solo para revisiones finales.
+**WARNING:** This command takes a LONG time (can be hours). Recommended only for final reviews.
 
-## Verificaciones
+## Verifications
 
 ### 1. clang-tidy Errors - ERROR
-Errores detectados por clang-tidy según `.clang-tidy`.
+Errors detected by clang-tidy according to `.clang-tidy`.
 
-**Patrones en output:**
-- `error:` - Error de clang-tidy
-- `warning:` - Advertencia (puede ser ERROR según configuración)
+**Patterns in output:**
+- `error:` - clang-tidy error
+- `warning:` - Warning (may be ERROR depending on configuration)
 
 ### 2. clang-tidy Warnings - WARNING
-Advertencias que no bloquean pero deberían revisarse.
+Warnings that don't block but should be reviewed.
 
-### 3. Inclusive Language - ERROR (Sin Docker)
-**Esta verificación NO requiere Docker y SIEMPRE debe ejecutarse.**
+### 3. Inclusive Language - ERROR (No Docker)
+**This verification does NOT require Docker and MUST always be executed.**
 
-Buscar términos prohibidos en archivos modificados:
+Search for prohibited terms in modified files:
 
 ```bash
 git diff --name-only <base>...HEAD | grep -v '^\.claude/' | xargs grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' 2>/dev/null
 ```
 
-**NOTA**: `<base>` es la rama base determinada en el paso 2 del agente principal (default: main).
+**NOTE**: `<base>` is the base branch determined in step 2 of the main agent (default: main).
 
-**Términos prohibidos y reemplazos:**
-| Prohibido | Reemplazo |
-|-----------|-----------|
+**Prohibited terms and replacements:**
+| Prohibited | Replacement |
+|------------|-------------|
 | whitelist | allowlist |
 | blacklist | denylist, blocklist |
 | master | primary, main |
 | slave | secondary, replica |
 
-**Excepciones:**
-- Referencias a branches de git externos (ej: `upstream/master`)
-- Citas textuales de documentación externa
-- Nombres de APIs externas que no controlamos
-- Archivos en `.claude/` (documentación del agente de revisión)
+**Exceptions:**
+- References to external git branches (e.g.: `upstream/master`)
+- Textual quotes from external documentation
+- External API names we don't control
+- Files in `.claude/` (review agent documentation)
 
-**Si se encuentran:**
+**If found:**
 ```
-ERROR: Uso de lenguaje no inclusivo
-Ubicación: source/common/foo.cc:123
-Texto: "whitelist"
-Sugerencia: Reemplazar con "allowlist"
+ERROR: Use of non-inclusive language
+Location: source/common/foo.cc:123
+Text: "whitelist"
+Suggestion: Replace with "allowlist"
 ```
 
-## Verificación Rápida Sin Docker
+## Quick Verification Without Docker
 
-Para una verificación rápida sin Docker completo:
+For quick verification without full Docker:
 
-### Inclusive Language (SIEMPRE ejecutar):
+### Inclusive Language (ALWAYS execute):
 ```bash
-# Buscar en archivos modificados (excluyendo .claude/)
-# <base> es la rama base determinada en envoy-review.md (default: main)
+# Search in modified files (excluding .claude/)
+# <base> is the base branch determined in envoy-review.md (default: main)
 for file in $(git diff --name-only <base>...HEAD | grep -v '^\.claude/'); do
   grep -n -E -i '\b(whitelist|blacklist|master|slave)\b' "$file" 2>/dev/null
 done
 ```
 
-### Verificación básica de código (opcional):
-- Buscar patrones problemáticos conocidos
-- `memcpy` sin bounds checking
-- `printf` con formato inseguro
-- Variables no inicializadas obvias
+### Basic code verification (optional):
+- Search for known problematic patterns
+- `memcpy` without bounds checking
+- `printf` with unsafe format
+- Obvious uninitialized variables
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -92,16 +92,16 @@ done
     {
       "type": "ERROR",
       "check": "inclusive_language",
-      "message": "Uso de término prohibido 'whitelist'",
+      "message": "Use of prohibited term 'whitelist'",
       "location": "source/common/foo.cc:123",
-      "suggestion": "Reemplazar 'whitelist' con 'allowlist'"
+      "suggestion": "Replace 'whitelist' with 'allowlist'"
     },
     {
       "type": "ERROR",
       "check": "clang-tidy",
-      "message": "Variable no inicializada",
+      "message": "Uninitialized variable",
       "location": "source/common/bar.cc:456",
-      "suggestion": "Inicializar variable antes de usar"
+      "suggestion": "Initialize variable before use"
     }
   ],
   "summary": {
@@ -112,40 +112,40 @@ done
 }
 ```
 
-## Ejecución
+## Execution
 
-### Fase 1: Inclusive Language (Sin Docker - SIEMPRE)
+### Phase 1: Inclusive Language (No Docker - ALWAYS)
 
-1. Obtener archivos modificados (usando rama base de envoy-review.md):
+1. Get modified files (using base branch from envoy-review.md):
 ```bash
 git diff --name-only <base>...HEAD | grep -v '^\.claude/'
 ```
 
-2. Buscar términos prohibidos en cada archivo
+2. Search for prohibited terms in each file
 
-3. Reportar encontrados como ERROR
+3. Report found ones as ERROR
 
-### Fase 2: clang-tidy (Con Docker - OPCIONAL)
+### Phase 2: clang-tidy (With Docker - OPTIONAL)
 
-**Debido a que clang-tidy tarda mucho, preguntar al usuario:**
+**Because clang-tidy takes a long time, ask the user:**
 ```
-clang-tidy es un proceso lento (puede tardar horas).
-¿Deseas ejecutarlo ahora? (s/n)
-Alternativa: Se ejecutará automáticamente en CI al crear el PR.
+clang-tidy is a slow process (may take hours).
+Do you want to run it now? (y/n)
+Alternative: It will run automatically in CI when creating the PR.
 ```
 
-Si el usuario confirma:
+If user confirms:
 
-1. Verificar ENVOY_DOCKER_BUILD_DIR
+1. Verify ENVOY_DOCKER_BUILD_DIR
 
-2. Crear directorio de logs
+2. Create logs directory
 
-3. Mostrar comando y ejecutar
+3. Show command and execute
 
-4. Parsear output y reportar
+4. Parse output and report
 
-## Notas
+## Notes
 
-- La verificación de inclusive language es rápida y SIEMPRE debe ejecutarse
-- clang-tidy completo es muy lento, considerar como opcional
-- Los errores de clang-tidy en `.clang-tidy` son enforced, los warnings son sugerencias
+- Inclusive language verification is fast and MUST always be executed
+- Full clang-tidy is very slow, consider as optional
+- clang-tidy errors in `.clang-tidy` are enforced, warnings are suggestions

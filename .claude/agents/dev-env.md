@@ -1,64 +1,64 @@
-# Sub-agente: Development Environment Check
+# Sub-agent: Development Environment Check
 
-## Propósito
-Verificar que el entorno de desarrollo está correctamente configurado según las instrucciones de Envoy.
+## Purpose
+Verify that the development environment is correctly configured according to Envoy instructions.
 
-## ACCIÓN: EJECUTAR SIEMPRE (comandos ls/cat instantáneos, sin Docker)
+## ACTION: ALWAYS EXECUTE (instant ls/cat commands, no Docker)
 
-## Verificaciones
+## Verifications
 
-### 1. Git Hooks Instalados (ERROR)
-Verificar que existen los hooks de git instalados por `./support/bootstrap`:
+### 1. Git Hooks Installed (ERROR)
+Verify that git hooks installed by `./support/bootstrap` exist:
 
-**Archivos a verificar:**
-- `.git/hooks/pre-commit` - Debe existir y ser ejecutable
-- `.git/hooks/pre-push` - Debe existir y ser ejecutable
-- `.git/hooks/commit-msg` - Debe existir y ser ejecutable
+**Files to verify:**
+- `.git/hooks/pre-commit` - Must exist and be executable
+- `.git/hooks/pre-push` - Must exist and be executable
+- `.git/hooks/commit-msg` - Must exist and be executable
 
-**Comando:**
+**Command:**
 ```bash
 ls -la .git/hooks/pre-commit .git/hooks/pre-push .git/hooks/commit-msg 2>/dev/null
 ```
 
-**Si no existen:**
+**If they don't exist:**
 ```
-ERROR: Git hooks no instalados.
-Sugerencia: Ejecutar ./support/bootstrap desde la raíz del proyecto
+ERROR: Git hooks not installed.
+Suggestion: Run ./support/bootstrap from project root
 ```
 
-### 2. Bootstrap Ejecutado (WARNING)
-Verificar indicadores de que bootstrap fue ejecutado:
-- Los hooks existen
-- Son symlinks o copias de `support/hooks/`
+### 2. Bootstrap Executed (WARNING)
+Verify indicators that bootstrap was executed:
+- Hooks exist
+- They are symlinks or copies from `support/hooks/`
 
-**Verificar contenido:**
+**Verify content:**
 ```bash
 head -5 .git/hooks/pre-commit
 ```
-Debería contener referencia a scripts de Envoy.
+Should contain reference to Envoy scripts.
 
-### 3. Archivo .env (INFO)
-Si existe `.env`, verificar si contiene `NO_VERIFY=1`:
+### 3. .env File (INFO)
+If `.env` exists, check if it contains `NO_VERIFY=1`:
 
 ```bash
 grep -q "NO_VERIFY" .env 2>/dev/null && echo "WARNING"
 ```
 
-**Si NO_VERIFY está activo:**
+**If NO_VERIFY is active:**
 ```
-INFO: NO_VERIFY está configurado en .env
-Esto desactiva las verificaciones de pre-commit/pre-push.
-Asegúrate de ejecutar las verificaciones manualmente antes del PR.
+INFO: NO_VERIFY is configured in .env
+This disables pre-commit/pre-push checks.
+Make sure to run checks manually before PR.
 ```
 
-### 4. Herramientas de Desarrollo (INFO)
-Verificaciones opcionales de herramientas comunes:
-- clang-format disponible
-- bazel disponible
+### 4. Development Tools (INFO)
+Optional common tool verifications:
+- clang-format available
+- bazel available
 
-**Nota:** Estas no son errores porque los comandos Docker incluyen las herramientas.
+**Note:** These are not errors because Docker commands include the tools.
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -67,9 +67,9 @@ Verificaciones opcionales de herramientas comunes:
     {
       "type": "ERROR|WARNING|INFO",
       "check": "git_hooks",
-      "message": "Git hooks no instalados",
+      "message": "Git hooks not installed",
       "location": ".git/hooks/",
-      "suggestion": "Ejecutar: ./support/bootstrap"
+      "suggestion": "Run: ./support/bootstrap"
     }
   ],
   "summary": {
@@ -80,9 +80,9 @@ Verificaciones opcionales de herramientas comunes:
 }
 ```
 
-## Ejecución
+## Execution
 
-1. Verificar existencia de hooks:
+1. Verify hooks existence:
 ```bash
 for hook in pre-commit pre-push commit-msg; do
   if [ -f ".git/hooks/$hook" ]; then
@@ -93,11 +93,11 @@ for hook in pre-commit pre-push commit-msg; do
 done
 ```
 
-2. Verificar .env:
+2. Verify .env:
 ```bash
 if [ -f ".env" ]; then
   cat .env
 fi
 ```
 
-3. Generar reporte
+3. Generate report

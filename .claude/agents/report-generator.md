@@ -1,28 +1,28 @@
-# Sub-agente: Report Generator
+# Sub-agent: Report Generator
 
-## Propósito
-Consolidar todos los reportes de los sub-agentes en un reporte final unificado.
+## Purpose
+Consolidate all sub-agent reports into a unified final report.
 
-## Entrada
-Resultados de todos los sub-agentes ejecutados en formato JSON.
+## Input
+Results from all executed sub-agents in JSON format.
 
-## Formato de Reporte Final
+## Final Report Format
 
 ```markdown
 # Envoy PR Pre-Review Report
 
-**Generado**: YYYY-MM-DD HH:MM:SS
-**Branch**: [nombre del branch actual]
-**Base commit**: [SHA del commit base]
-**Head commit**: [SHA del commit actual]
-**Commits analizados**: [número de commits]
+**Generated**: YYYY-MM-DD HH:MM:SS
+**Branch**: [current branch name]
+**Base commit**: [base commit SHA]
+**Head commit**: [current commit SHA]
+**Commits analyzed**: [number of commits]
 
 ---
 
-## Resumen Ejecutivo
+## Executive Summary
 
-| Categoría | Errores | Warnings | Info |
-|-----------|:-------:|:--------:|:----:|
+| Category | Errors | Warnings | Info |
+|----------|:------:|:--------:|:----:|
 | PR Metadata | X | Y | Z |
 | Dev Environment | X | Y | Z |
 | Code Format | X | Y | Z |
@@ -38,14 +38,14 @@ Resultados de todos los sub-agentes ejecutados en formato JSON.
 | Maintainer Review | X | Y | Z |
 | **TOTAL** | **X** | **Y** | **Z** |
 
-### Estado General
+### Overall Status
 
-[EMOJI] **[ESTADO]**
+[EMOJI] **[STATUS]**
 
-Donde:
-- 🔴 **BLOCKED** - Hay errores críticos que deben corregirse
-- 🟡 **NEEDS_WORK** - Hay warnings que deberían revisarse
-- 🟢 **READY** - No hay errores ni warnings significativos
+Where:
+- 🔴 **BLOCKED** - There are critical errors that must be fixed
+- 🟡 **NEEDS_WORK** - There are warnings that should be reviewed
+- 🟢 **READY** - No errors or significant warnings
 
 **Review Readiness Score**: [score]/100
 
@@ -53,42 +53,42 @@ Donde:
 
 ## 👥 Predicted Reviewer Comments
 
-Basado en patrones de reviews anteriores de Envoy, estos son los comentarios
-que probablemente recibirías de diferentes tipos de maintainers:
+Based on previous Envoy review patterns, these are the comments
+you would likely receive from different types of maintainers:
 
-### 🎯 Performance-Focused Reviewer ([N] comentarios)
-| Archivo:Línea | Comentario | Sugerencia |
-|---------------|------------|------------|
-| [ubicación] | [comentario predicho] | [fix sugerido] |
+### 🎯 Performance-Focused Reviewer ([N] comments)
+| File:Line | Comment | Suggestion |
+|-----------|---------|------------|
+| [location] | [predicted comment] | [suggested fix] |
 
-### 📐 Style-Focused Reviewer ([N] comentarios)
-| Archivo:Línea | Comentario | Sugerencia |
-|---------------|------------|------------|
-| [ubicación] | [comentario predicho] | [fix sugerido] |
+### 📐 Style-Focused Reviewer ([N] comments)
+| File:Line | Comment | Suggestion |
+|-----------|---------|------------|
+| [location] | [predicted comment] | [suggested fix] |
 
-### 🔒 Security-Focused Reviewer ([N] comentarios)
-| Archivo:Línea | Comentario | Sugerencia |
-|---------------|------------|------------|
-| [ubicación] | [comentario predicho] | [fix sugerido] |
+### 🔒 Security-Focused Reviewer ([N] comments)
+| File:Line | Comment | Suggestion |
+|-----------|---------|------------|
+| [location] | [predicted comment] | [suggested fix] |
 
-### 🏗️ Architecture-Focused Reviewer ([N] comentarios)
-| Archivo:Línea | Comentario | Sugerencia |
-|---------------|------------|------------|
-| [ubicación] | [comentario predicho] | [fix sugerido] |
+### 🏗️ Architecture-Focused Reviewer ([N] comments)
+| File:Line | Comment | Suggestion |
+|-----------|---------|------------|
+| [location] | [predicted comment] | [suggested fix] |
 
-### 🧪 Testing-Focused Reviewer ([N] comentarios)
-| Archivo:Línea | Comentario | Sugerencia |
-|---------------|------------|------------|
-| [ubicación] | [comentario predicho] | [fix sugerido] |
+### 🧪 Testing-Focused Reviewer ([N] comments)
+| File:Line | Comment | Suggestion |
+|-----------|---------|------------|
+| [location] | [predicted comment] | [suggested fix] |
 
-**Tiempo estimado de review**: ~[X] minutos
+**Estimated review time**: ~[X] minutes
 
 ---
 
-## Archivos Analizados
+## Analyzed Files
 
 ```
-[Lista de archivos modificados agrupados por tipo]
+[List of modified files grouped by type]
 
 Source files (N):
   - source/common/foo.cc
@@ -107,19 +107,19 @@ Documentation (N):
 
 ---
 
-## Hallazgos Detallados
+## Detailed Findings
 
-### 🔴 Errores (Deben corregirse)
+### 🔴 Errors (Must be fixed)
 
-Estos problemas BLOQUEAN el merge del PR:
+These issues BLOCK PR merge:
 
-#### [E001] [Categoría] Título del error
-- **Ubicación**: `archivo:línea`
-- **Descripción**: Descripción detallada del problema
-- **Sugerencia**: Cómo solucionarlo
+#### [E001] [Category] Error title
+- **Location**: `file:line`
+- **Description**: Detailed problem description
+- **Suggestion**: How to fix it
 
 ```
-[Código o diff relevante si aplica]
+[Relevant code or diff if applicable]
 ```
 
 ---
@@ -128,150 +128,150 @@ Estos problemas BLOQUEAN el merge del PR:
 
 ---
 
-### 🟡 Warnings (Deberían corregirse)
+### 🟡 Warnings (Should be fixed)
 
-Estos problemas no bloquean pero deberían revisarse:
+These issues don't block but should be reviewed:
 
-#### [W001] [Categoría] Título del warning
-- **Ubicación**: `archivo:línea`
-- **Descripción**: Descripción del problema
-- **Sugerencia**: Cómo solucionarlo
-
----
-
-### 🔵 Info (Mejoras opcionales)
-
-Sugerencias de mejora que no son obligatorias:
-
-#### [I001] [Categoría] Título
-- **Ubicación**: `archivo:línea`
-- **Descripción**: Descripción
-- **Sugerencia**: Sugerencia
+#### [W001] [Category] Warning title
+- **Location**: `file:line`
+- **Description**: Problem description
+- **Suggestion**: How to fix it
 
 ---
 
-## Comandos de Corrección
+### 🔵 Info (Optional improvements)
 
-### Correcciones Automáticas
+Improvement suggestions that are not mandatory:
+
+#### [I001] [Category] Title
+- **Location**: `file:line`
+- **Description**: Description
+- **Suggestion**: Suggestion
+
+---
+
+## Fix Commands
+
+### Automatic Fixes
 
 ```bash
-# Formateo de código C++
+# C++ code formatting
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
 
-# Formateo de protos
+# Proto formatting
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_proto_format'
 
-# Añadir DCO sign-off a commits
+# Add DCO sign-off to commits
 git commit --amend -s
-# Para múltiples commits:
-git rebase -i HEAD~N  # y añadir -s a cada uno
+# For multiple commits:
+git rebase -i HEAD~N  # and add -s to each one
 
-# Ejecutar tests específicos localmente
+# Run specific tests locally
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh 'bazel test //test/path/to:test'
 
-# Verificar dependencias
+# Verify dependencies
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh 'bazel run //tools/dependency:validate'
 ```
 
-### Template para Release Notes
+### Release Notes Template
 
-Si faltan release notes, añadir en `changelogs/current.yaml`:
+If release notes are missing, add in `changelogs/current.yaml`:
 ```yaml
-# Para nueva feature:
+# For new feature:
 new_features:
 - area: <subsystem>
   change: |
-    Added <descripción de la feature>.
+    Added <feature description>.
 
-# Para bug fix:
+# For bug fix:
 bug_fixes:
 - area: <subsystem>
   change: |
-    Fixed <descripción del bug>.
+    Fixed <bug description>.
 
-# Para cambio de comportamiento:
+# For behavior change:
 behavior_changes:
 - area: <subsystem>
   change: |
-    Changed <descripción del cambio>. This can be reverted by setting
+    Changed <change description>. This can be reverted by setting
     runtime guard ``envoy.reloadable_features.<flag>`` to false.
 ```
 
-### Correcciones Manuales Requeridas
+### Required Manual Fixes
 
-1. [ ] Corregir [E001]: [descripción breve]
-2. [ ] Corregir [E002]: [descripción breve]
-3. [ ] Revisar [W001]: [descripción breve]
-
----
-
-## Verificaciones No Ejecutadas
-
-[Si algún sub-agente no se ejecutó, listarlo aquí con la razón]
-
-| Check | Razón | Cómo ejecutar |
-|-------|-------|---------------|
-| clang-tidy | Requiere --full-lint | `/envoy-review --full-lint` |
-| coverage (full) | Requiere --coverage-full | `/envoy-review --coverage-full` |
-| deep-analysis | Requiere --deep-analysis | `/envoy-review --deep-analysis` |
-| unit-tests | Omitido con --skip-tests | `/envoy-review` (por defecto) |
-| security-deps | Sin cambios en dependencias | Automático si hay cambios en bazel/ |
+1. [ ] Fix [E001]: [brief description]
+2. [ ] Fix [E002]: [brief description]
+3. [ ] Review [W001]: [brief description]
 
 ---
 
-## Próximos Pasos
+## Checks Not Executed
 
-1. [ ] Corregir todos los errores listados arriba
-2. [ ] Revisar y corregir warnings aplicables
-3. [ ] Ejecutar tests localmente: `bazel test //test/...`
-4. [ ] Verificar que CI pasa
-5. [ ] Crear/actualizar PR
+[If any sub-agent wasn't executed, list it here with reason]
+
+| Check | Reason | How to execute |
+|-------|--------|----------------|
+| clang-tidy | Requires --full-lint | `/envoy-review --full-lint` |
+| coverage (full) | Requires --coverage-full | `/envoy-review --coverage-full` |
+| deep-analysis | Requires --deep-analysis | `/envoy-review --deep-analysis` |
+| unit-tests | Skipped with --skip-tests | `/envoy-review` (default) |
+| security-deps | No dependency changes | Automatic if changes in bazel/ |
 
 ---
 
-## Información Adicional
+## Next Steps
+
+1. [ ] Fix all errors listed above
+2. [ ] Review and fix applicable warnings
+3. [ ] Run tests locally: `bazel test //test/...`
+4. [ ] Verify CI passes
+5. [ ] Create/update PR
+
+---
+
+## Additional Information
 
 ### Unit Tests
-| Métrica | Valor |
-|---------|-------|
-| Tests ejecutados | X |
-| Pasados | X |
-| Fallidos | X |
+| Metric | Value |
+|--------|-------|
+| Tests executed | X |
+| Passed | X |
+| Failed | X |
 | Timeout | X |
-| Duración | Xm Xs |
+| Duration | Xm Xs |
 
 ### Code Expert Analysis
-| Métrica | Valor |
-|---------|-------|
-| Archivos analizados | X |
-| Confianza promedio | X% |
-| Categorías detectadas | memory, buffer, threading |
+| Metric | Value |
+|--------|-------|
+| Files analyzed | X |
+| Average confidence | X% |
+| Categories detected | memory, buffer, threading |
 
 ### Security Audit
-| Métrica | Valor |
-|---------|-------|
-| Dependencias verificadas | X |
-| CVEs encontrados | X |
-| Severidad máxima | critical/high/medium/low |
+| Metric | Value |
+|--------|-------|
+| Dependencies verified | X |
+| CVEs found | X |
+| Maximum severity | critical/high/medium/low |
 
-### Coverage Estimado (Modo Semi)
-- **Confianza**: X%
-- **Archivos sin test aparente**: [lista]
+### Estimated Coverage (Semi Mode)
+- **Confidence**: X%
+- **Files without apparent test**: [list]
 
 ### Maintainer Review
-| Métrica | Valor |
-|---------|-------|
-| Comentarios predichos | X |
+| Metric | Value |
+|--------|-------|
+| Predicted comments | X |
 | Review Readiness Score | X/100 |
-| Tiempo estimado de review | X minutos |
-| Por reviewer: Performance | X |
-| Por reviewer: Style | X |
-| Por reviewer: Security | X |
-| Por reviewer: Architecture | X |
-| Por reviewer: Testing | X |
+| Estimated review time | X minutes |
+| By reviewer: Performance | X |
+| By reviewer: Style | X |
+| By reviewer: Security | X |
+| By reviewer: Architecture | X |
+| By reviewer: Testing | X |
 
-### Logs de Ejecución
-Los logs detallados están en:
+### Execution Logs
+Detailed logs are in:
 ```
 ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/
 ├── YYYYMMDDHHMM-format.log
@@ -282,13 +282,13 @@ ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/
 
 ---
 
-*Reporte generado por Envoy PR Pre-Review Agent*
-*Para más información: /envoy-review --help*
+*Report generated by Envoy PR Pre-Review Agent*
+*For more information: /envoy-review --help*
 ```
 
-## Lógica de Generación
+## Generation Logic
 
-### 1. Determinar Estado General
+### 1. Determine Overall Status
 
 ```python
 def determine_status(findings):
@@ -303,17 +303,17 @@ def determine_status(findings):
         return "READY", "🟢"
 ```
 
-### 2. Asignar IDs a Hallazgos
+### 2. Assign IDs to Findings
 
 ```
-Errores: E001, E002, E003, ...
+Errors: E001, E002, E003, ...
 Warnings: W001, W002, W003, ...
 Info: I001, I002, I003, ...
 ```
 
-### 3. Agrupar por Categoría
+### 3. Group by Category
 
-Agrupar hallazgos por el agente que los generó:
+Group findings by generating agent:
 - pr-metadata → "PR Metadata"
 - dev-env → "Dev Environment"
 - code-format → "Code Format"
@@ -328,22 +328,22 @@ Agrupar hallazgos por el agente que los generó:
 - extension-review → "Extensions"
 - maintainer-review → "Maintainer Review"
 
-### 4. Generar Comandos de Fix
+### 4. Generate Fix Commands
 
-Incluir comandos específicos basados en errores encontrados:
-- Si hay errores de formato → comando format
-- Si hay errores de proto format → comando fix_proto_format
-- Si faltan release notes → template de entrada
+Include specific commands based on errors found:
+- If there are format errors → format command
+- If there are proto format errors → fix_proto_format command
+- If release notes are missing → entry template
 
-## Guardado del Reporte
+## Report Saving
 
-Si --save-report está activo:
+If --save-report is active:
 
 ```bash
 REPORT_FILE="${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/YYYYMMDDHHMM-report.md"
 ```
 
-También mostrar en consola un resumen corto:
+Also show a short summary in console:
 
 ```
 ════════════════════════════════════════════════════════════════
@@ -369,9 +369,9 @@ To fix formatting automatically:
 ════════════════════════════════════════════════════════════════
 ```
 
-## Notas
+## Notes
 
-- El reporte siempre se muestra en consola (resumen)
-- El reporte completo se guarda en archivo si --save-report
-- Usar colores/emojis para mejor legibilidad en terminal
-- IDs permiten referencia fácil en discusiones
+- Report is always shown in console (summary)
+- Complete report is saved to file if --save-report
+- Use colors/emojis for better terminal readability
+- IDs allow easy reference in discussions

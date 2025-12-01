@@ -1,151 +1,151 @@
-# Sub-agente: Code Expert Analysis
+# Sub-agent: Code Expert Analysis
 
-## Propósito
-Analizar el código C++ añadido/modificado desde la perspectiva de un experto en Envoy y C++, detectando problemas de seguridad, memoria y patrones problemáticos.
+## Purpose
+Analyze added/modified C++ code from the perspective of an Envoy and C++ expert, detecting security, memory, and problematic pattern issues.
 
-## ACCIÓN:
-- **Modo Heurístico (por defecto)**: EJECUTAR SIEMPRE - Análisis del diff buscando patrones (segundos, sin Docker)
-- **Modo Deep (--deep-analysis)**: Solo con flag explícito - Ejecutar sanitizers ASAN/MSAN/TSAN (horas, con Docker)
+## ACTION:
+- **Heuristic Mode (default)**: ALWAYS EXECUTE - Diff analysis looking for patterns (seconds, no Docker)
+- **Deep Mode (--deep-analysis)**: Only with explicit flag - Run ASAN/MSAN/TSAN sanitizers (hours, with Docker)
 
-## Requiere Docker: Solo en modo --deep-analysis
+## Requires Docker: Only in --deep-analysis mode
 
-## Umbral de Confianza
-**Solo reportar hallazgos con confianza ≥ 70%**
+## Confidence Threshold
+**Only report findings with confidence ≥ 70%**
 
 ---
 
-## Modo Heurístico (Por Defecto)
+## Heuristic Mode (Default)
 
-### Paso 1: Obtener código modificado
+### Step 1: Get modified code
 ```bash
-# Obtener diff del código C++ (usando rama base de envoy-review.md)
+# Get C++ code diff (using base branch from envoy-review.md)
 git diff <base>...HEAD -- '*.cc' '*.h' '*.cpp' '*.hpp'
 ```
 
-### Paso 2: Analizar patrones problemáticos
+### Step 2: Analyze problematic patterns
 
-Para cada archivo modificado, analizar el diff buscando los siguientes patrones:
+For each modified file, analyze the diff looking for the following patterns:
 
-#### Categoría: Memory (Memoria)
+#### Category: Memory
 
-| Patrón | Severidad | Confianza Base | Descripción |
-|--------|-----------|----------------|-------------|
-| `new X` sin smart pointer | WARNING | 75% | Posible memory leak si no hay delete |
-| `malloc`/`calloc`/`realloc` | ERROR | 90% | Envoy usa smart pointers, no malloc |
-| `free()` en código nuevo | ERROR | 90% | Indica gestión manual de memoria |
-| `delete` explícito | WARNING | 70% | Preferir smart pointers |
-| Raw pointer como miembro de clase | WARNING | 75% | Posible ownership issue |
+| Pattern | Severity | Base Confidence | Description |
+|---------|----------|-----------------|-------------|
+| `new X` without smart pointer | WARNING | 75% | Possible memory leak if no delete |
+| `malloc`/`calloc`/`realloc` | ERROR | 90% | Envoy uses smart pointers, not malloc |
+| `free()` in new code | ERROR | 90% | Indicates manual memory management |
+| Explicit `delete` | WARNING | 70% | Prefer smart pointers |
+| Raw pointer as class member | WARNING | 75% | Possible ownership issue |
 
-**Detección de Memory Leaks**:
+**Memory Leak Detection**:
 ```cpp
-// PROBLEMA: new sin delete en el mismo scope
+// PROBLEM: new without delete in same scope
 Foo* ptr = new Foo();
-// ... no hay delete ptr;
+// ... no delete ptr;
 
-// SOLUCIÓN SUGERIDA:
+// SUGGESTED SOLUTION:
 auto ptr = std::make_unique<Foo>();
 ```
 
-#### Categoría: Buffer (Buffer Overflow)
+#### Category: Buffer (Buffer Overflow)
 
-| Patrón | Severidad | Confianza Base | Descripción |
-|--------|-----------|----------------|-------------|
-| `memcpy` sin verificación de tamaño | ERROR | 85% | Posible buffer overflow |
-| `strcpy`/`strcat` | ERROR | 95% | Funciones inseguras, usar alternativas |
-| `sprintf` | ERROR | 90% | Usar snprintf o absl::StrFormat |
-| Array indexing sin bounds check | WARNING | 70% | Verificar límites |
-| `gets()` | ERROR | 100% | Función extremadamente insegura |
+| Pattern | Severity | Base Confidence | Description |
+|---------|----------|-----------------|-------------|
+| `memcpy` without size verification | ERROR | 85% | Possible buffer overflow |
+| `strcpy`/`strcat` | ERROR | 95% | Unsafe functions, use alternatives |
+| `sprintf` | ERROR | 90% | Use snprintf or absl::StrFormat |
+| Array indexing without bounds check | WARNING | 70% | Verify limits |
+| `gets()` | ERROR | 100% | Extremely unsafe function |
 
-**Ejemplo de detección**:
+**Detection Example**:
 ```cpp
-// PROBLEMA:
+// PROBLEM:
 char buf[100];
-memcpy(buf, src, len);  // len no verificado
+memcpy(buf, src, len);  // len not verified
 
-// SOLUCIÓN:
+// SOLUTION:
 if (len <= sizeof(buf)) {
   memcpy(buf, src, len);
 }
 ```
 
-#### Categoría: Null Pointer
+#### Category: Null Pointer
 
-| Patrón | Severidad | Confianza Base | Descripción |
-|--------|-----------|----------------|-------------|
-| Deref después de obtener puntero sin check | WARNING | 75% | Posible null deref |
-| `->` sin verificación previa | WARNING | 70% | Si el puntero puede ser null |
-| Return de puntero sin documentación | INFO | 70% | Clarificar si puede ser null |
+| Pattern | Severity | Base Confidence | Description |
+|---------|----------|-----------------|-------------|
+| Deref after getting pointer without check | WARNING | 75% | Possible null deref |
+| `->` without prior verification | WARNING | 70% | If pointer can be null |
+| Pointer return without documentation | INFO | 70% | Clarify if can be null |
 
-#### Categoría: Threading
+#### Category: Threading
 
-| Patrón | Severidad | Confianza Base | Descripción |
-|--------|-----------|----------------|-------------|
-| Variable compartida sin mutex | WARNING | 75% | Posible race condition |
-| `static` mutable sin protección | ERROR | 85% | Thread-unsafe |
-| Callback sin thread safety docs | INFO | 70% | Documentar thread safety |
+| Pattern | Severity | Base Confidence | Description |
+|---------|----------|-----------------|-------------|
+| Shared variable without mutex | WARNING | 75% | Possible race condition |
+| Mutable `static` without protection | ERROR | 85% | Thread-unsafe |
+| Callback without thread safety docs | INFO | 70% | Document thread safety |
 
-#### Categoría: Envoy-Specific
+#### Category: Envoy-Specific
 
-| Patrón | Severidad | Confianza Base | Descripción |
-|--------|-----------|----------------|-------------|
-| API deprecated de Envoy | WARNING | 90% | Usar API nueva |
-| Missing ENVOY_BUG/ASSERT para invariantes | INFO | 70% | Añadir assertions |
-| Runtime guard sin documentar | WARNING | 80% | Documentar en changelog |
-| Callback sin `weak_ptr` check | WARNING | 75% | Posible use-after-free |
-| Missing `ABSL_MUST_USE_RESULT` | INFO | 70% | Para funciones que retornan error |
+| Pattern | Severity | Base Confidence | Description |
+|---------|----------|-----------------|-------------|
+| Deprecated Envoy API | WARNING | 90% | Use new API |
+| Missing ENVOY_BUG/ASSERT for invariants | INFO | 70% | Add assertions |
+| Runtime guard without documentation | WARNING | 80% | Document in changelog |
+| Callback without `weak_ptr` check | WARNING | 75% | Possible use-after-free |
+| Missing `ABSL_MUST_USE_RESULT` | INFO | 70% | For functions returning error |
 
-#### Categoría: Integer Safety
+#### Category: Integer Safety
 
-| Patrón | Severidad | Confianza Base | Descripción |
-|--------|-----------|----------------|-------------|
-| Cast de size_t a int | WARNING | 80% | Posible truncamiento |
-| Aritmética sin overflow check | WARNING | 75% | Usar SafeInt o similar |
-| Comparación signed/unsigned | WARNING | 75% | Comportamiento inesperado |
+| Pattern | Severity | Base Confidence | Description |
+|---------|----------|-----------------|-------------|
+| Cast from size_t to int | WARNING | 80% | Possible truncation |
+| Arithmetic without overflow check | WARNING | 75% | Use SafeInt or similar |
+| Signed/unsigned comparison | WARNING | 75% | Unexpected behavior |
 
-### Paso 3: Contextualizar hallazgos
+### Step 3: Contextualize findings
 
-Para cada hallazgo, determinar:
-1. **Es código nuevo o modificación de existente?**
-2. **El patrón está en un hot path?**
-3. **Hay tests que cubren este código?**
-4. **Existen patrones similares aceptados en el codebase?**
+For each finding, determine:
+1. **Is it new code or modification of existing?**
+2. **Is the pattern in a hot path?**
+3. **Are there tests covering this code?**
+4. **Do similar accepted patterns exist in the codebase?**
 
-Ajustar confianza basándose en contexto:
-- Si hay código similar aceptado en Envoy: -15% confianza
-- Si es en código de test: -20% confianza
-- Si es en hot path crítico: +10% confianza
+Adjust confidence based on context:
+- If similar code accepted in Envoy: -15% confidence
+- If in test code: -20% confidence
+- If in critical hot path: +10% confidence
 
 ---
 
-## Modo Deep Analysis (--deep-analysis)
+## Deep Analysis Mode (--deep-analysis)
 
-### Requiere Docker: SÍ
+### Requires Docker: YES
 
-### Advertencia Previa
+### Prior Warning
 ```
-ADVERTENCIA: El análisis profundo ejecuta sanitizers y puede tardar horas.
-¿Deseas continuar? (s/n)
+WARNING: Deep analysis runs sanitizers and may take hours.
+Do you want to continue? (y/n)
 
-Esto ejecutará:
-- ASAN (Address Sanitizer): Detecta memory errors
-- MSAN (Memory Sanitizer): Detecta uninitialized reads
-- TSAN (Thread Sanitizer): Detecta race conditions
+This will execute:
+- ASAN (Address Sanitizer): Detects memory errors
+- MSAN (Memory Sanitizer): Detects uninitialized reads
+- TSAN (Thread Sanitizer): Detects race conditions
 ```
 
-### Comandos a Ejecutar
+### Commands to Execute
 
 ```bash
 # Address Sanitizer
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh asan' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/${TIMESTAMP}-asan.log
 
-# Memory Sanitizer (opcional, muy lento)
+# Memory Sanitizer (optional, very slow)
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh msan' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/${TIMESTAMP}-msan.log
 
 # Thread Sanitizer
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh tsan' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/${TIMESTAMP}-tsan.log
 ```
 
-### Parsing de Output de Sanitizers
+### Sanitizer Output Parsing
 
 **ASAN patterns**:
 ```
@@ -168,7 +168,7 @@ WARNING: ThreadSanitizer: lock-order-inversion
 
 ---
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -183,8 +183,8 @@ WARNING: ThreadSanitizer: lock-order-inversion
       "location": "source/common/foo.cc:123",
       "code_snippet": "Foo* ptr = new Foo();",
       "confidence": 85,
-      "description": "Posible memory leak: 'new' sin smart pointer correspondiente",
-      "suggestion": "Usar std::make_unique<Foo>() en lugar de new Foo()",
+      "description": "Possible memory leak: 'new' without corresponding smart pointer",
+      "suggestion": "Use std::make_unique<Foo>() instead of new Foo()",
       "envoy_specific": false,
       "references": ["https://google.github.io/styleguide/cppguide.html#Ownership_and_Smart_Pointers"]
     }
@@ -206,106 +206,106 @@ WARNING: ThreadSanitizer: lock-order-inversion
 
 ---
 
-## Ejecución
+## Execution
 
-### Modo Heurístico (siempre):
+### Heuristic Mode (always):
 
-1. Obtener lista de archivos C++ modificados:
+1. Get list of modified C++ files:
 ```bash
 git diff --name-only <base>...HEAD | grep -E '\.(cc|h|cpp|hpp)$'
 ```
 
-2. Para cada archivo, obtener el diff:
+2. For each file, get the diff:
 ```bash
-git diff <base>...HEAD -- <archivo>
+git diff <base>...HEAD -- <file>
 ```
 
-3. Analizar cada patrón de la lista
+3. Analyze each pattern from the list
 
-4. Filtrar hallazgos con confianza < 70%
+4. Filter findings with confidence < 70%
 
-5. Generar reporte
+5. Generate report
 
-### Modo Deep (solo con --deep-analysis):
+### Deep Mode (only with --deep-analysis):
 
-1. Confirmar con usuario
+1. Confirm with user
 
-2. Verificar ENVOY_DOCKER_BUILD_DIR
+2. Verify ENVOY_DOCKER_BUILD_DIR
 
-3. Ejecutar sanitizers secuencialmente
+3. Execute sanitizers sequentially
 
-4. Parsear output
+4. Parse output
 
-5. Combinar con resultados heurísticos
+5. Combine with heuristic results
 
-6. Generar reporte
+6. Generate report
 
 ---
 
-## Ejemplos de Detección
+## Detection Examples
 
-### Ejemplo 1: Memory Leak
+### Example 1: Memory Leak
 ```cpp
-// Código detectado:
+// Detected code:
 void processRequest() {
   Buffer* buf = new Buffer(1024);
-  // ... código ...
+  // ... code ...
   if (error) {
-    return;  // BUG: memory leak si hay error
+    return;  // BUG: memory leak if error
   }
   delete buf;
 }
 
-// Hallazgo:
+// Finding:
 {
   "type": "ERROR",
   "category": "memory_leak",
   "confidence": 90,
-  "description": "Memory leak en path de error: 'buf' no se libera si 'error' es true",
-  "suggestion": "Usar std::unique_ptr<Buffer> para gestión automática de memoria"
+  "description": "Memory leak in error path: 'buf' is not freed if 'error' is true",
+  "suggestion": "Use std::unique_ptr<Buffer> for automatic memory management"
 }
 ```
 
-### Ejemplo 2: Buffer Overflow
+### Example 2: Buffer Overflow
 ```cpp
-// Código detectado:
+// Detected code:
 void copyData(const char* src, size_t len) {
   char dest[256];
-  memcpy(dest, src, len);  // len puede ser > 256
+  memcpy(dest, src, len);  // len can be > 256
 }
 
-// Hallazgo:
+// Finding:
 {
   "type": "ERROR",
   "category": "buffer_overflow",
   "confidence": 85,
-  "description": "Posible buffer overflow: 'len' no se verifica contra sizeof(dest)",
-  "suggestion": "Añadir: if (len > sizeof(dest)) { return error; }"
+  "description": "Possible buffer overflow: 'len' is not verified against sizeof(dest)",
+  "suggestion": "Add: if (len > sizeof(dest)) { return error; }"
 }
 ```
 
-### Ejemplo 3: Envoy-Specific
+### Example 3: Envoy-Specific
 ```cpp
-// Código detectado:
-cluster_manager_.get("cluster_name");  // API deprecated
+// Detected code:
+cluster_manager_.get("cluster_name");  // Deprecated API
 
-// Hallazgo:
+// Finding:
 {
   "type": "WARNING",
   "category": "deprecated_api",
   "confidence": 90,
   "envoy_specific": true,
-  "description": "Uso de API deprecated: ClusterManager::get()",
-  "suggestion": "Usar ClusterManager::getThreadLocalCluster() en su lugar"
+  "description": "Use of deprecated API: ClusterManager::get()",
+  "suggestion": "Use ClusterManager::getThreadLocalCluster() instead"
 }
 ```
 
 ---
 
-## Notas
+## Notes
 
-- El análisis heurístico tiene limitaciones y puede producir falsos positivos
-- La confianza se ajusta según contexto (tests, hot paths, patrones existentes)
-- Los sanitizers (modo deep) son más precisos pero muy lentos
-- Este agente complementa, no reemplaza, el code review humano
-- Siempre verificar hallazgos manualmente antes de actuar
+- Heuristic analysis has limitations and may produce false positives
+- Confidence adjusts based on context (tests, hot paths, existing patterns)
+- Sanitizers (deep mode) are more accurate but very slow
+- This agent complements, does not replace, human code review
+- Always manually verify findings before acting

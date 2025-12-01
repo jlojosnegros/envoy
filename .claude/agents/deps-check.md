@@ -1,75 +1,75 @@
-# Sub-agente: Dependencies Check
+# Sub-agent: Dependencies Check
 
-## Propósito
-Verificar que los cambios en dependencias cumplen con la política de dependencias de Envoy.
+## Purpose
+Verify that dependency changes comply with Envoy's dependency policy.
 
-## Se Activa Cuando
-Hay cambios en archivos de dependencias:
+## Activates When
+There are changes in dependency files:
 - `BUILD`
 - `*.bzl`
 - `bazel/repositories.bzl`
 - `bazel/repository_locations.bzl`
-- Archivos en `bazel/`
+- Files in `bazel/`
 
-## Requiere Docker: SI
+## Requires Docker: YES
 
-## Comando CI Principal
+## Main CI Command
 ```bash
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh deps' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/YYYYMMDDHHMM-deps.log
 ```
 
-## Verificaciones
+## Verifications
 
-### 1. Nueva Dependencia Documentada - ERROR
-Si se añade una nueva dependencia, debe estar documentada:
+### 1. New Dependency Documented - ERROR
+If a new dependency is added, it must be documented:
 
 ```bash
 git diff <base>...HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+'
 ```
 
-**Verificar:**
-- Justificación de la dependencia
-- Licencia compatible
-- Mantenimiento activo del proyecto
+**Verify:**
+- Justification for the dependency
+- Compatible license
+- Active project maintenance
 
-### 2. Política de Dependencias - ERROR
-Según DEPENDENCY_POLICY.md:
+### 2. Dependency Policy - ERROR
+According to DEPENDENCY_POLICY.md:
 
-- Dependencias deben tener licencia compatible (Apache 2.0, MIT, BSD)
-- No dependencias con licencias restrictivas (GPL, LGPL sin excepción)
-- Dependencias deben estar activamente mantenidas
+- Dependencies must have compatible license (Apache 2.0, MIT, BSD)
+- No dependencies with restrictive licenses (GPL, LGPL without exception)
+- Dependencies must be actively maintained
 
-### 3. CVE/Vulnerabilidades - WARNING
-El comando deps verifica vulnerabilidades conocidas:
+### 3. CVE/Vulnerabilities - WARNING
+The deps command checks for known vulnerabilities:
 
-**En output buscar:**
-- `CVE-` seguido de número
+**Look for in output:**
+- `CVE-` followed by number
 - `vulnerability`
 - `security`
 
 ### 4. Version Pinning - WARNING
-Las dependencias deben estar pinned a versiones específicas:
+Dependencies must be pinned to specific versions:
 
 ```bash
 git diff <base>...HEAD | grep -E 'version|sha256|commit'
 ```
 
-### 5. Dependencias Transitivas - INFO
-Advertir sobre nuevas dependencias transitivas que se añaden.
+### 5. Transitive Dependencies - INFO
+Warn about new transitive dependencies being added.
 
-## Verificación Rápida Sin Docker
+## Quick Verification Without Docker
 
-Antes de ejecutar Docker, verificar cambios básicos:
+Before running Docker, verify basic changes:
 
 ```bash
-# Ver qué archivos de dependencias cambiaron
+# See which dependency files changed
 git diff --name-only <base>...HEAD | grep -E '(BUILD|\.bzl|bazel/)'
 
-# Ver nuevas dependencias añadidas
+# See new dependencies added
 git diff <base>...HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+.*name.*='
 ```
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -81,16 +81,16 @@ git diff <base>...HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+.*name.
     {
       "type": "ERROR",
       "check": "new_dependency",
-      "message": "Nueva dependencia sin justificación documentada",
+      "message": "New dependency without documented justification",
       "location": "bazel/repository_locations.bzl:123",
-      "suggestion": "Documentar justificación de 'new_lib' en PR description"
+      "suggestion": "Document justification for 'new_lib' in PR description"
     },
     {
       "type": "WARNING",
       "check": "cve_detected",
-      "message": "Dependencia con CVE conocida",
+      "message": "Dependency with known CVE",
       "location": "dependency_name:version",
-      "suggestion": "Actualizar a versión sin vulnerabilidad"
+      "suggestion": "Update to version without vulnerability"
     }
   ],
   "summary": {
@@ -108,47 +108,47 @@ git diff <base>...HEAD -- 'bazel/repository_locations.bzl' | grep -E '^\+.*name.
 }
 ```
 
-## Ejecución
+## Execution
 
-1. Verificar si hay cambios en archivos de dependencias:
+1. Check if there are changes in dependency files:
 ```bash
 git diff --name-only <base>...HEAD | grep -E '(BUILD|\.bzl|bazel/)'
 ```
 
-2. Si no hay cambios, saltar este agente
+2. If no changes, skip this agent
 
-3. Si hay cambios:
-   - Hacer análisis rápido sin Docker
-   - Ejecutar comando deps con Docker
-   - Parsear output
+3. If there are changes:
+   - Do quick analysis without Docker
+   - Execute deps command with Docker
+   - Parse output
 
-4. Generar reporte
+4. Generate report
 
-## Política de Dependencias (Resumen)
+## Dependency Policy (Summary)
 
-Según DEPENDENCY_POLICY.md:
+According to DEPENDENCY_POLICY.md:
 
-### Licencias Permitidas
+### Allowed Licenses
 - Apache 2.0
 - MIT
 - BSD (2-clause, 3-clause)
 - ISC
 - Zlib
 
-### Licencias NO Permitidas
-- GPL (cualquier versión)
-- LGPL (sin linking exception)
+### NOT Allowed Licenses
+- GPL (any version)
+- LGPL (without linking exception)
 - AGPL
-- Propietarias
+- Proprietary
 
-### Criterios de Calidad
-- Proyecto activamente mantenido
-- Comunidad razonable
-- Sin vulnerabilidades conocidas sin parche
-- Builds reproducibles
+### Quality Criteria
+- Actively maintained project
+- Reasonable community
+- No known vulnerabilities without patch
+- Reproducible builds
 
-## Notas
+## Notes
 
-- El comando deps puede tardar varios minutos
-- Verifica tanto dependencias directas como transitivas
-- Las advertencias de CVE deben investigarse antes del merge
+- The deps command may take several minutes
+- Verifies both direct and transitive dependencies
+- CVE warnings should be investigated before merge

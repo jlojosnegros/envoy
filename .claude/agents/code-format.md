@@ -1,39 +1,39 @@
-# Sub-agente: Code Format Check
+# Sub-agent: Code Format Check
 
-## Propósito
-Verificar que el código cumple con los estándares de formateo de Envoy usando clang-format y otras herramientas.
+## Purpose
+Verify that code meets Envoy formatting standards using clang-format and other tools.
 
-## ACCIÓN: EJECUTAR SIEMPRE (tarda 2-5 minutos)
-Este comando es rápido. NO usar heurísticos - ejecutar el comando directamente.
+## ACTION: ALWAYS EXECUTE (takes 2-5 minutes)
+This command is fast. DO NOT use heuristics - execute the command directly.
 
-## Requiere Docker: SI
+## Requires Docker: YES
 
-## Comando CI Principal
+## Main CI Command
 ```bash
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/YYYYMMDDHHMM-format.log
 ```
 
-## Verificaciones
+## Verifications
 
 ### 1. C++ Format (clang-format) - ERROR
-Verifica que todo el código C++ está formateado según `.clang-format`.
+Verifies that all C++ code is formatted according to `.clang-format`.
 
-**Archivos afectados:** `*.cc`, `*.h`, `*.cpp`, `*.hpp`
+**Affected files:** `*.cc`, `*.h`, `*.cpp`, `*.hpp`
 
-**Si hay errores:**
+**If there are errors:**
 ```
-ERROR: Código C++ no formateado correctamente
-Archivos afectados: [lista]
-Sugerencia: Ejecutar fix automático:
+ERROR: C++ code not formatted correctly
+Affected files: [list]
+Suggestion: Run automatic fix:
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
 ```
 
 ### 2. Proto Format - ERROR
-Verifica formato de archivos protobuf.
+Verifies protobuf file format.
 
-**Archivos afectados:** `*.proto` en `api/`
+**Affected files:** `*.proto` in `api/`
 
-**Comando específico:**
+**Specific command:**
 ```bash
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh check_proto_format'
 ```
@@ -44,39 +44,39 @@ ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh fix_proto_f
 ```
 
 ### 3. Python Format - WARNING
-Verifica formato de scripts Python.
+Verifies Python script format.
 
-**Archivos afectados:** `*.py`
+**Affected files:** `*.py`
 
 ### 4. Bash Format - WARNING
-Verifica formato de scripts Bash.
+Verifies Bash script format.
 
-**Archivos afectados:** `*.sh`
+**Affected files:** `*.sh`
 
 ### 5. BUILD Files Format - WARNING
-Verifica formato de archivos Bazel.
+Verifies Bazel file format.
 
-**Archivos afectados:** `BUILD`, `*.bzl`, `BUILD.bazel`
+**Affected files:** `BUILD`, `*.bzl`, `BUILD.bazel`
 
-## Parsing del Output
+## Output Parsing
 
-El comando `format` produce output indicando archivos con problemas.
+The `format` command produces output indicating files with problems.
 
-**Patrones a buscar:**
-- `ERROR:` - Errores de formato
-- `would reformat` - Archivos que necesitan reformateo
-- `--- a/` y `+++ b/` - Diff de cambios necesarios
+**Patterns to look for:**
+- `ERROR:` - Format errors
+- `would reformat` - Files that need reformatting
+- `--- a/` and `+++ b/` - Diff of needed changes
 
-## Pre-check Sin Docker
+## Pre-check Without Docker
 
-Antes de ejecutar Docker, se puede hacer un check rápido:
+Before running Docker, a quick check can be done:
 
 ```bash
-# Verificar si hay cambios de formato pendientes localmente
+# Check if there are pending local format changes
 git diff --name-only | grep -E '\.(cc|h|cpp|hpp)$'
 ```
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -87,9 +87,9 @@ git diff --name-only | grep -E '\.(cc|h|cpp|hpp)$'
     {
       "type": "ERROR",
       "check": "clang_format",
-      "message": "Archivo no formateado correctamente",
+      "message": "File not formatted correctly",
       "location": "source/common/foo.cc",
-      "suggestion": "Ejecutar: ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'"
+      "suggestion": "Run: ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'"
     }
   ],
   "summary": {
@@ -101,33 +101,33 @@ git diff --name-only | grep -E '\.(cc|h|cpp|hpp)$'
 }
 ```
 
-## Ejecución
+## Execution
 
-1. **Verificar ENVOY_DOCKER_BUILD_DIR** - Si no está definida, no ejecutar y reportar
+1. **Verify ENVOY_DOCKER_BUILD_DIR** - If not defined, don't execute and report
 
-2. **Crear directorio de logs:**
+2. **Create logs directory:**
 ```bash
 mkdir -p ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs
 ```
 
-3. **Generar timestamp:**
+3. **Generate timestamp:**
 ```bash
 TIMESTAMP=$(date +%Y%m%d%H%M)
 ```
 
-4. **Mostrar comando al usuario antes de ejecutar:**
+4. **Show command to user before executing:**
 ```
-Ejecutando verificación de formato...
-Comando: ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
+Running format verification...
+Command: ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh format'
 Log: ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/${TIMESTAMP}-format.log
 ```
 
-5. **Ejecutar comando**
+5. **Execute command**
 
-6. **Parsear output y generar reporte**
+6. **Parse output and generate report**
 
-## Notas
+## Notes
 
-- El comando `format` puede tardar varios minutos
-- Si hay errores, el exit code será != 0
-- El log completo estará disponible para debugging
+- The `format` command may take several minutes
+- If there are errors, exit code will be != 0
+- Complete log will be available for debugging

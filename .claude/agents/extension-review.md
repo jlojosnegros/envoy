@@ -1,59 +1,59 @@
-# Sub-agente: Extension Review
+# Sub-agent: Extension Review
 
-## Propósito
-Verificar que los cambios en extensiones cumplen con la política de extensiones de Envoy.
+## Purpose
+Verify that extension changes comply with Envoy's extension policy.
 
-## Se Activa Cuando
-Hay cambios en:
+## Activates When
+There are changes in:
 - `source/extensions/`
 - `contrib/`
 - `api/envoy/extensions/`
 - `api/contrib/`
 
-## Requiere Docker: NO (análisis estático)
+## Requires Docker: NO (static analysis)
 
-## Verificaciones
+## Verifications
 
-### 1. Nueva Extensión - Sponsor (INFO)
-Si es una nueva extensión, verificar sponsor:
+### 1. New Extension - Sponsor (INFO)
+If it's a new extension, verify sponsor:
 
-**Detectar nueva extensión:**
+**Detect new extension:**
 ```bash
 git diff --name-only --diff-filter=A <base>...HEAD | grep -E 'source/extensions/.*/[^/]+\.(cc|h)$'
 ```
 
-**Si es nueva:**
+**If new:**
 ```
-INFO: Nueva extensión detectada
-Según EXTENSION_POLICY.md, las nuevas extensiones requieren:
-- Sponsor: Un maintainer existente que apadrine la extensión
-- Reviewers: Al menos 2 reviewers para el código
-Por favor, asegúrate de tener sponsor y reviewers antes del PR.
+INFO: New extension detected
+According to EXTENSION_POLICY.md, new extensions require:
+- Sponsor: An existing maintainer to sponsor the extension
+- Reviewers: At least 2 reviewers for the code
+Please make sure you have sponsor and reviewers before the PR.
 ```
 
-### 2. CODEOWNERS Actualizado - WARNING
-Si hay nueva extensión, debe actualizarse CODEOWNERS:
+### 2. CODEOWNERS Updated - WARNING
+If there's a new extension, CODEOWNERS must be updated:
 
 ```bash
 git diff <base>...HEAD -- CODEOWNERS | grep -E 'extensions|contrib'
 ```
 
-**Si hay nueva extensión sin entrada en CODEOWNERS:**
+**If new extension without CODEOWNERS entry:**
 ```
-WARNING: Nueva extensión sin entrada en CODEOWNERS
-Ubicación: source/extensions/filters/http/new_filter/
-Sugerencia: Añadir entrada en CODEOWNERS:
+WARNING: New extension without CODEOWNERS entry
+Location: source/extensions/filters/http/new_filter/
+Suggestion: Add entry in CODEOWNERS:
 /source/extensions/filters/http/new_filter/ @reviewer1 @reviewer2
 ```
 
 ### 3. Security Posture Tag - WARNING
-Verificar que envoy_cc_extension tiene security_posture:
+Verify that envoy_cc_extension has security_posture:
 
 ```bash
 git diff <base>...HEAD -- 'source/extensions/**/BUILD' | grep -E 'envoy_cc_extension|security_posture'
 ```
 
-**Tags válidos:**
+**Valid tags:**
 - `robust_to_untrusted_downstream`
 - `robust_to_untrusted_downstream_and_upstream`
 - `requires_trusted_downstream_and_upstream`
@@ -61,65 +61,65 @@ git diff <base>...HEAD -- 'source/extensions/**/BUILD' | grep -E 'envoy_cc_exten
 - `data_plane_agnostic`
 
 ### 4. Status Tag - INFO
-Verificar que tiene status tag:
+Verify it has status tag:
 
 ```bash
 git diff <base>...HEAD -- 'source/extensions/**/BUILD' | grep -E 'status\s*='
 ```
 
-**Tags válidos:**
+**Valid tags:**
 - `stable`
 - `alpha`
 - `wip`
 
-### 5. Metadata en extensions_metadata.yaml - WARNING
-Para contrib extensions, verificar entrada en metadata:
+### 5. Metadata in extensions_metadata.yaml - WARNING
+For contrib extensions, verify metadata entry:
 
 ```bash
 git diff <base>...HEAD -- 'contrib/extensions_metadata.yaml'
 ```
 
-### 6. Extensión Contrib vs Core - INFO
-Si es contrib, advertir sobre diferencias:
+### 6. Contrib vs Core Extension - INFO
+If it's contrib, warn about differences:
 
 ```
-INFO: Esta es una extensión contrib
-- Requiere end-user sponsor
-- NO está incluida en imagen Docker por defecto
-- NO tiene cobertura del equipo de seguridad de Envoy
-- Debería usar v3alpha para API
+INFO: This is a contrib extension
+- Requires end-user sponsor
+- NOT included in default Docker image
+- Does NOT have Envoy security team coverage
+- Should use v3alpha for API
 ```
 
 ### 7. Platform Specific Features - WARNING
-Si la extensión usa features específicas de plataforma:
+If the extension uses platform-specific features:
 
 ```bash
 git diff <base>...HEAD | grep -E '#ifdef|#if defined|__linux__|__APPLE__|_WIN32'
 ```
 
-**Si hay código específico de plataforma:**
+**If platform-specific code detected:**
 ```
-WARNING: Código específico de plataforma detectado
-Según EXTENSION_POLICY.md:
-- Evitar #ifdef <OSNAME>
-- Preferir feature guards en sistema de build
-- Añadir a *_SKIP_TARGETS en bazel/repositories.bzl si no soporta alguna plataforma
+WARNING: Platform-specific code detected
+According to EXTENSION_POLICY.md:
+- Avoid #ifdef <OSNAME>
+- Prefer feature guards in build system
+- Add to *_SKIP_TARGETS in bazel/repositories.bzl if some platform not supported
 ```
 
-## Verificación de Archivo BUILD
+## BUILD File Verification
 
-Para nuevas extensiones, verificar estructura correcta del BUILD:
+For new extensions, verify correct BUILD structure:
 
 ```python
 envoy_cc_extension(
     name = "config",
     # ... deps ...
     security_posture = "robust_to_untrusted_downstream",
-    status = "alpha",  # o stable, wip
+    status = "alpha",  # or stable, wip
 )
 ```
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -131,16 +131,16 @@ envoy_cc_extension(
     {
       "type": "WARNING",
       "check": "codeowners_missing",
-      "message": "Nueva extensión sin entrada en CODEOWNERS",
+      "message": "New extension without CODEOWNERS entry",
       "location": "source/extensions/filters/http/new_filter/",
-      "suggestion": "Añadir reviewers en CODEOWNERS para esta extensión"
+      "suggestion": "Add reviewers in CODEOWNERS for this extension"
     },
     {
       "type": "WARNING",
       "check": "security_posture_missing",
-      "message": "Falta security_posture en envoy_cc_extension",
+      "message": "Missing security_posture in envoy_cc_extension",
       "location": "source/extensions/filters/http/new_filter/BUILD",
-      "suggestion": "Añadir security_posture apropiado basado en el threat model"
+      "suggestion": "Add appropriate security_posture based on threat model"
     }
   ],
   "summary": {
@@ -158,33 +158,33 @@ envoy_cc_extension(
 }
 ```
 
-## Ejecución
+## Execution
 
-1. Identificar cambios en extensiones:
+1. Identify extension changes:
 ```bash
 git diff --name-only <base>...HEAD | grep -E '(source/extensions|contrib)'
 ```
 
-2. Determinar si es extensión nueva o modificación
+2. Determine if it's new extension or modification
 
-3. Si es nueva:
-   - Informar sobre requisito de sponsor
-   - Verificar CODEOWNERS
+3. If new:
+   - Inform about sponsor requirement
+   - Verify CODEOWNERS
 
-4. Verificar BUILD file:
-   - security_posture presente
-   - status presente
+4. Verify BUILD file:
+   - security_posture present
+   - status present
 
-5. Verificar si es contrib:
-   - extensions_metadata.yaml actualizado
-   - Informar sobre diferencias
+5. Verify if it's contrib:
+   - extensions_metadata.yaml updated
+   - Inform about differences
 
-6. Buscar código específico de plataforma
+6. Search for platform-specific code
 
-7. Generar reporte
+7. Generate report
 
-## Referencias
+## References
 
-- EXTENSION_POLICY.md: Política completa
-- CODEOWNERS: Asignación de reviewers
-- extensions_metadata.yaml (contrib): Metadata de contrib
+- EXTENSION_POLICY.md: Complete policy
+- CODEOWNERS: Reviewer assignment
+- extensions_metadata.yaml (contrib): Contrib metadata

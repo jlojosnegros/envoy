@@ -1,121 +1,121 @@
-# Sub-agente: API Review
+# Sub-agent: API Review
 
-## Propósito
-Verificar que los cambios en la API cumplen con el checklist de revisión de Envoy.
+## Purpose
+Verify that API changes comply with the Envoy review checklist.
 
-## Se Activa Cuando
-Hay cambios en el directorio `api/`
+## Activates When
+There are changes in the `api/` directory
 
-## ACCIÓN:
-- **Fase 1 (Análisis estático)**: EJECUTAR SIEMPRE (comandos git/grep instantáneos)
-- **Fase 2 (api_compat)**: EJECUTAR SIEMPRE si hay cambios en api/ (tarda 5-15 min con Docker)
+## ACTION:
+- **Phase 1 (Static analysis)**: ALWAYS EXECUTE (instant git/grep commands)
+- **Phase 2 (api_compat)**: ALWAYS EXECUTE if there are changes in api/ (takes 5-15 min with Docker)
 
-## Requiere Docker: SI (para api_compat)
+## Requires Docker: YES (for api_compat)
 
-## Verificaciones
+## Verifications
 
-### Fase 1: Análisis Estático (Sin Docker)
+### Phase 1: Static Analysis (Without Docker)
 
 #### 1.1 Default Values Safe - ERROR
-Verificar que los valores por defecto no causan cambios de comportamiento:
+Verify that default values don't cause behavior changes:
 
 ```bash
 git diff <base>...HEAD -- 'api/**/*.proto' | grep -E 'default|= [0-9]|= true|= false'
 ```
 
-**Preguntas a considerar:**
-- ¿Los valores por defecto causarán cambios para usuarios existentes?
-- ¿Es necesario un runtime guard?
+**Questions to consider:**
+- Will default values cause changes for existing users?
+- Is a runtime guard needed?
 
 #### 1.2 Validation Rules - WARNING
-Verificar presencia de reglas protoc-gen-validate:
+Verify presence of protoc-gen-validate rules:
 
 ```bash
 git diff <base>...HEAD -- 'api/**/*.proto' | grep -E '\[(validate\.|rules)'
 ```
 
-**Campos a verificar:**
-- Campos numéricos tienen bounds
-- Campos required están marcados
-- Campos repeated tienen min/max
+**Fields to verify:**
+- Numeric fields have bounds
+- Required fields are marked
+- Repeated fields have min/max
 
 #### 1.3 Deprecation Documentation - ERROR
-Si hay campos deprecated, verificar documentación:
+If there are deprecated fields, verify documentation:
 
 ```bash
 git diff <base>...HEAD -- 'api/**/*.proto' | grep -i 'deprecated'
 ```
 
-**Si hay deprecated:**
-- Debe existir alternativa documentada
-- Debe estar en release notes
-- No deprecated sin alternativa lista
+**If there's deprecated:**
+- Alternative must be documented
+- Must be in release notes
+- No deprecated without ready alternative
 
 #### 1.4 Style Compliance - WARNING
-Verificar cumplimiento con api/STYLE.md:
+Verify compliance with api/STYLE.md:
 
-- Nombres de campos en snake_case
-- Nombres de mensajes en PascalCase
-- Comentarios de documentación presentes
-- Uso correcto de WKT (Well-Known Types)
+- Field names in snake_case
+- Message names in PascalCase
+- Documentation comments present
+- Correct usage of WKT (Well-Known Types)
 
 #### 1.5 Extension Point Usage - INFO
-Verificar si debería usar TypedExtensionConfig:
+Verify if TypedExtensionConfig should be used:
 
 ```bash
 git diff <base>...HEAD -- 'api/**/*.proto' | grep -E 'oneof|Any|typed_config'
 ```
 
-**Considerar:**
-- ¿Es esta una nueva funcionalidad extensible?
-- ¿Debería ser un plugin en lugar de código core?
+**Consider:**
+- Is this new extensible functionality?
+- Should it be a plugin instead of core code?
 
-### Fase 2: Breaking Changes (Con Docker)
+### Phase 2: Breaking Changes (With Docker)
 
-#### Comando CI
+#### CI Command
 ```bash
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh api_compat' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/YYYYMMDDHHMM-api-compat.log
 ```
 
-**Este comando detecta:**
-- Campos renumerados
-- Tipos cambiados
-- Campos renombrados
-- Breaking changes en wire format
+**This command detects:**
+- Renumbered fields
+- Changed types
+- Renamed fields
+- Breaking changes in wire format
 
-## Checklist de api/review_checklist.md
+## Checklist from api/review_checklist.md
 
 ### Feature Enablement
-- [ ] ¿Valores por defecto causan cambios de comportamiento?
-- [ ] ¿Usuarios pueden deshabilitar el cambio?
-- [ ] ¿Necesita WKT para valores que podrían cambiar?
+- [ ] Do default values cause behavior changes?
+- [ ] Can users disable the change?
+- [ ] Does it need WKT for values that might change?
 
 ### Validation Rules
-- [ ] ¿Tiene reglas validate?
-- [ ] ¿Campo obligatorio marcado como required?
-- [ ] ¿Campos numéricos tienen bounds?
+- [ ] Does it have validate rules?
+- [ ] Is required field marked as required?
+- [ ] Do numeric fields have bounds?
 
 ### Deprecations
-- [ ] ¿Alternativa disponible en clientes conocidos?
-- [ ] ¿Documentación apunta al reemplazo?
+- [ ] Is alternative available in known clients?
+- [ ] Does documentation point to replacement?
 
 ### Extensibility
-- [ ] ¿Debería ser extension point?
-- [ ] ¿Enum debería ser oneof con mensajes vacíos?
+- [ ] Should it be an extension point?
+- [ ] Should enum be oneof with empty messages?
 
 ### Consistency
-- [ ] ¿Reutiliza tipos existentes donde sea posible?
-- [ ] ¿Nombres consistentes con API existente?
+- [ ] Does it reuse existing types where possible?
+- [ ] Are names consistent with existing API?
 
 ### Failure Modes
-- [ ] ¿Modo de fallo documentado?
-- [ ] ¿Comportamiento consistente entre clientes?
+- [ ] Is failure mode documented?
+- [ ] Is behavior consistent across clients?
 
 ### Documentation
-- [ ] ¿Comentarios claros en proto?
-- [ ] ¿Ejemplos donde sean útiles?
+- [ ] Are proto comments clear?
+- [ ] Are there examples where useful?
 
-## Formato de Salida
+## Output Format
 
 ```json
 {
@@ -127,16 +127,16 @@ ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh api_compat'
     {
       "type": "ERROR",
       "check": "breaking_change",
-      "message": "Campo renombrado causa breaking change",
+      "message": "Renamed field causes breaking change",
       "location": "api/envoy/config/foo.proto:45",
-      "suggestion": "No renombrar campos existentes, añadir nuevo campo y deprecar el antiguo"
+      "suggestion": "Don't rename existing fields, add new field and deprecate old one"
     },
     {
       "type": "WARNING",
       "check": "validation_missing",
-      "message": "Campo numérico sin validación de bounds",
+      "message": "Numeric field without bounds validation",
       "location": "api/envoy/config/foo.proto:67",
-      "suggestion": "Añadir [(validate.rules).uint32 = {gte: 0, lte: 100}]"
+      "suggestion": "Add [(validate.rules).uint32 = {gte: 0, lte: 100}]"
     }
   ],
   "summary": {
@@ -154,34 +154,34 @@ ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh api_compat'
 }
 ```
 
-## Ejecución
+## Execution
 
-### Fase 1 (Sin Docker - SIEMPRE):
+### Phase 1 (Without Docker - ALWAYS):
 
-1. Identificar archivos proto modificados:
+1. Identify modified proto files:
 ```bash
 git diff --name-only <base>...HEAD | grep '\.proto$'
 ```
 
-2. Analizar diff para cada verificación estática
+2. Analyze diff for each static verification
 
-3. Revisar checklist
+3. Review checklist
 
-### Fase 2 (Con Docker):
+### Phase 2 (With Docker):
 
-1. Verificar ENVOY_DOCKER_BUILD_DIR
+1. Verify ENVOY_DOCKER_BUILD_DIR
 
-2. Ejecutar api_compat:
+2. Execute api_compat:
 ```bash
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh api_compat'
 ```
 
-3. Parsear output para breaking changes
+3. Parse output for breaking changes
 
-4. Combinar con resultados de Fase 1
+4. Combine with Phase 1 results
 
-## Notas
+## Notes
 
-- api_compat compara contra el commit base para detectar breaking changes
-- Las reglas de backwards compatibility son estrictas en Envoy
-- Cambios en protos pueden afectar a múltiples clientes xDS
+- api_compat compares against base commit to detect breaking changes
+- Backwards compatibility rules are strict in Envoy
+- Proto changes can affect multiple xDS clients

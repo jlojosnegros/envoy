@@ -1,30 +1,30 @@
-# Sub-agente: Test Coverage Analysis
+# Sub-agent: Test Coverage Analysis
 
-## Propósito
-Verificar que el código nuevo tiene cobertura de tests adecuada.
+## Purpose
+Verify that new code has adequate test coverage.
 
-## Modos de Operación
+## Operation Modes
 
-### Modo SEMI (por defecto) - Sin Docker
-Análisis heurístico para estimar cobertura sin ejecutar build completo.
+### SEMI Mode (default) - No Docker
+Heuristic analysis to estimate coverage without running full build.
 
-### Modo FULL (--coverage-full) - Con Docker
-Ejecuta build de coverage real para verificación precisa.
+### FULL Mode (--coverage-full) - With Docker
+Runs real coverage build for precise verification.
 
 ---
 
-## MODO SEMI (Heurístico)
+## SEMI MODE (Heuristic)
 
-### Objetivo
-Estimar con alta probabilidad si el código nuevo está cubierto por tests.
+### Objective
+Estimate with high probability whether new code is covered by tests.
 
-### Verificaciones
+### Verifications
 
-#### 1. Matching de Archivos Test
-Para cada archivo `.cc` modificado, buscar archivo de test correspondiente:
+#### 1. Test File Matching
+For each modified `.cc` file, search for corresponding test file:
 
 ```bash
-# Para source/common/foo/bar.cc buscar:
+# For source/common/foo/bar.cc search:
 # - test/common/foo/bar_test.cc
 # - test/common/foo_test.cc
 
@@ -33,54 +33,54 @@ TEST_DIR=$(echo $FILE | sed 's/^source/test/')
 TEST_FILE=$(echo $TEST_DIR | sed 's/\.cc$/_test.cc/')
 ```
 
-**Si no existe test file:**
+**If test file doesn't exist:**
 ```
-WARNING: No se encontró archivo de test para source/common/foo/bar.cc
-Esperado: test/common/foo/bar_test.cc
+WARNING: No test file found for source/common/foo/bar.cc
+Expected: test/common/foo/bar_test.cc
 ```
 
-#### 2. Análisis de Funciones Nuevas
+#### 2. New Functions Analysis
 
-Identificar funciones/métodos nuevos en el diff:
+Identify new functions/methods in the diff:
 
 ```bash
 git diff <base>...HEAD -- '*.cc' '*.h' | grep -E '^\+.*\b(void|bool|int|string|Status)\s+\w+\s*\('
 ```
 
-Para cada función nueva, verificar si existe test que la referencie:
+For each new function, verify if test exists that references it:
 
 ```bash
 grep -r "functionName" test/
 ```
 
-#### 3. Verificación de Tests Añadidos
+#### 3. Added Tests Verification
 
-Si hay archivos nuevos en `source/`, debe haber archivos nuevos en `test/`:
+If there are new files in `source/`, there should be new files in `test/`:
 
 ```bash
 git diff --name-only --diff-filter=A <base>...HEAD | grep '^source/'
 git diff --name-only --diff-filter=A <base>...HEAD | grep '^test/'
 ```
 
-#### 4. Análisis de Branches de Código
+#### 4. Code Branch Analysis
 
-Buscar nuevos `if`/`else`/`switch` y verificar cobertura:
-- ¿Hay tests para el caso positivo?
-- ¿Hay tests para el caso negativo?
-- ¿Hay tests para edge cases?
+Search for new `if`/`else`/`switch` and verify coverage:
+- Are there tests for the positive case?
+- Are there tests for the negative case?
+- Are there tests for edge cases?
 
-### Cálculo de Confianza
+### Confidence Calculation
 
 ```
-Confianza Base: 50%
-+ 15% si existe archivo de test correspondiente
-+ 15% si se modificó/añadió el archivo de test
-+ 10% si se encuentran referencias a funciones nuevas en tests
-+ 10% si ratio nuevos_tests/nuevo_codigo > 0.5
-= Confianza Final (max 100%)
+Base Confidence: 50%
++ 15% if corresponding test file exists
++ 15% if test file was modified/added
++ 10% if references to new functions found in tests
++ 10% if new_tests/new_code ratio > 0.5
+= Final Confidence (max 100%)
 ```
 
-### Formato de Salida Modo SEMI
+### SEMI Mode Output Format
 
 ```json
 {
@@ -91,16 +91,16 @@ Confianza Base: 50%
     {
       "type": "WARNING",
       "check": "missing_test_file",
-      "message": "No se encontró archivo de test",
+      "message": "No test file found",
       "location": "source/common/foo.cc",
-      "suggestion": "Crear test/common/foo_test.cc"
+      "suggestion": "Create test/common/foo_test.cc"
     },
     {
       "type": "INFO",
       "check": "uncovered_function",
-      "message": "Función potencialmente no testeada",
+      "message": "Potentially untested function",
       "location": "source/common/foo.cc:123 - processRequest()",
-      "suggestion": "Añadir test para processRequest()"
+      "suggestion": "Add test for processRequest()"
     }
   ],
   "summary": {
@@ -119,38 +119,38 @@ Confianza Base: 50%
 
 ---
 
-## MODO FULL (Build de Coverage)
+## FULL MODE (Coverage Build)
 
-### Requiere Docker: SI
+### Requires Docker: YES
 
-### Advertencia Previa
+### Prior Warning
 ```
-ADVERTENCIA: El build de coverage es un proceso MUY lento (puede tardar horas).
-¿Estás seguro de que deseas ejecutarlo? (s/n)
+WARNING: Coverage build is a VERY slow process (may take hours).
+Are you sure you want to run it? (y/n)
 
-Alternativa: Puedes usar el comando /coverage en tu PR de GitHub
-para obtener un reporte de coverage sin ejecutar localmente.
+Alternative: You can use the /coverage command on your GitHub PR
+to get a coverage report without running locally.
 ```
 
-### Comando CI
+### CI Command
 ```bash
 ENVOY_DOCKER_BUILD_DIR=<dir> ./ci/run_envoy_docker.sh './ci/do_ci.sh coverage' 2>&1 | tee ${ENVOY_DOCKER_BUILD_DIR}/review-agent-logs/YYYYMMDDHHMM-coverage.log
 ```
 
-### Análisis del Reporte
+### Report Analysis
 
-Después del build, analizar el reporte de coverage para los archivos modificados:
+After build, analyze coverage report for modified files:
 
-1. Ubicar reporte de coverage generado
-2. Filtrar por archivos en el diff
-3. Verificar % de cobertura en código nuevo
-4. Identificar líneas no cubiertas
+1. Locate generated coverage report
+2. Filter by files in diff
+3. Verify coverage % in new code
+4. Identify uncovered lines
 
-### Criterio de Envoy
-- Se espera 100% de cobertura en código nuevo
-- Excepciones deben estar justificadas en el PR
+### Envoy Criteria
+- 100% coverage expected in new code
+- Exceptions must be justified in PR
 
-### Formato de Salida Modo FULL
+### FULL Mode Output Format
 
 ```json
 {
@@ -161,9 +161,9 @@ Después del build, analizar el reporte de coverage para los archivos modificado
     {
       "type": "ERROR",
       "check": "coverage_below_100",
-      "message": "Cobertura de código nuevo: 85%",
+      "message": "New code coverage: 85%",
       "location": "source/common/foo.cc",
-      "suggestion": "Añadir tests para líneas: 45, 67, 89-92",
+      "suggestion": "Add tests for lines: 45, 67, 89-92",
       "uncovered_lines": [45, 67, 89, 90, 91, 92]
     }
   ],
@@ -182,37 +182,37 @@ Después del build, analizar el reporte de coverage para los archivos modificado
 
 ---
 
-## Ejecución
+## Execution
 
-### Para Modo SEMI:
+### For SEMI Mode:
 
-1. Obtener lista de archivos modificados en `source/`:
+1. Get list of modified files in `source/`:
 ```bash
 git diff --name-only <base>...HEAD | grep '^source/.*\.cc$'
 ```
 
-2. Para cada archivo, buscar test correspondiente
+2. For each file, search for corresponding test
 
-3. Analizar funciones nuevas en diff
+3. Analyze new functions in diff
 
-4. Calcular confianza
+4. Calculate confidence
 
-5. Generar reporte
+5. Generate report
 
-### Para Modo FULL:
+### For FULL Mode:
 
-1. Mostrar advertencia y confirmar con usuario
+1. Show warning and confirm with user
 
-2. Verificar ENVOY_DOCKER_BUILD_DIR
+2. Verify ENVOY_DOCKER_BUILD_DIR
 
-3. Ejecutar build de coverage
+3. Execute coverage build
 
-4. Analizar reporte
+4. Analyze report
 
-5. Generar reporte con líneas no cubiertas
+5. Generate report with uncovered lines
 
-## Notas
+## Notes
 
-- El modo SEMI es suficiente para la mayoría de PRs
-- El modo FULL debería usarse solo cuando hay dudas o para PRs críticos
-- La CI de GitHub ejecutará coverage automáticamente
+- SEMI mode is sufficient for most PRs
+- FULL mode should only be used when there are doubts or for critical PRs
+- GitHub CI will run coverage automatically
