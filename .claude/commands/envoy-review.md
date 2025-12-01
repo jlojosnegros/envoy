@@ -71,6 +71,7 @@ CHECKS DISPONIBLES:
     - test-coverage       Verifica existencia de tests (heurístico)
     - code-expert         Análisis experto C++: memoria, seguridad, patrones
     - security-audit      Auditoría de seguridad: CVEs en dependencias
+    - maintainer-review   Predice comentarios de reviewers humanos
 
   Con Docker (requieren --build-dir):
     - code-format         Verifica formateo con clang-format (~2-5 min)
@@ -184,6 +185,14 @@ Estos checks se ejecutan SIEMPRE, no requieren Docker:
    - Consultar APIs externas (OSV, GitHub, NVD) para CVEs conocidos
    - Si APIs no disponibles, marcar para Fase 2 con Docker
    - Ver `.claude/agents/security-audit.md` para detalles
+
+9. **maintainer-review**: Si `has_source_changes` o `has_api_changes` - EJECUTAR predicción de comentarios:
+   - Analizar diff completo buscando patrones conocidos de reviews
+   - Simular 5 tipos de reviewers: Performance, Style, Security, Architecture, Testing
+   - Generar comentarios predichos con ubicación exacta (archivo:línea)
+   - Incluir rationale y suggested_fix para cada comentario
+   - Calcular Review Readiness Score (0-100)
+   - Ver `.claude/agents/maintainer-review.md` para detalles
 
 ### Paso 5: Ejecutar checks con Docker
 
@@ -302,6 +311,7 @@ Consolida todos los resultados en formato:
 | Docs/Changelog | ✅ Ejecutado | - | file check |
 | Code Expert | ✅ Ejecutado | - | análisis heurístico C++ |
 | Security Audit | ✅ Ejecutado | - | CVE check (APIs externas) |
+| Maintainer Review | ✅ Ejecutado | - | predicción de comentarios |
 | Code Format | ✅ Ejecutado / ⏭️ Omitido (--skip-docker) / ❌ No aplica | Xm Xs | do_ci.sh format |
 | API Compat | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh api_compat |
 | Dependencies | ✅ Ejecutado / ⏭️ Omitido / ❌ No aplica | Xm Xs | do_ci.sh deps |
@@ -325,9 +335,43 @@ Consolida todos los resultados en formato:
 | API Review | X | Y | Z |
 | Dependencies | X | Y | Z |
 | Extensions | X | Y | Z |
+| Maintainer Review | X | Y | Z |
 | **TOTAL** | **X** | **Y** | **Z** |
 
 **Estado General**: [emoji] [BLOCKED / NEEDS_WORK / READY]
+**Review Readiness Score**: [score]/100
+
+## 👥 Predicted Reviewer Comments
+
+Basado en patrones de reviews anteriores de Envoy, estos son los comentarios
+que probablemente recibirías de diferentes tipos de maintainers:
+
+### 🎯 Performance-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 📐 Style-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 🔒 Security-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 🏗️ Architecture-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 🧪 Testing-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+**Tiempo estimado de review**: ~[X] minutos
 
 ## Hallazgos Detallados
 

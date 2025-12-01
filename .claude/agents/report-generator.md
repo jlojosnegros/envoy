@@ -35,6 +35,7 @@ Resultados de todos los sub-agentes ejecutados en formato JSON.
 | API Review | X | Y | Z |
 | Dependencies | X | Y | Z |
 | Extensions | X | Y | Z |
+| Maintainer Review | X | Y | Z |
 | **TOTAL** | **X** | **Y** | **Z** |
 
 ### Estado General
@@ -45,6 +46,42 @@ Donde:
 - 🔴 **BLOCKED** - Hay errores críticos que deben corregirse
 - 🟡 **NEEDS_WORK** - Hay warnings que deberían revisarse
 - 🟢 **READY** - No hay errores ni warnings significativos
+
+**Review Readiness Score**: [score]/100
+
+---
+
+## 👥 Predicted Reviewer Comments
+
+Basado en patrones de reviews anteriores de Envoy, estos son los comentarios
+que probablemente recibirías de diferentes tipos de maintainers:
+
+### 🎯 Performance-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 📐 Style-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 🔒 Security-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 🏗️ Architecture-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+### 🧪 Testing-Focused Reviewer ([N] comentarios)
+| Archivo:Línea | Comentario | Sugerencia |
+|---------------|------------|------------|
+| [ubicación] | [comentario predicho] | [fix sugerido] |
+
+**Tiempo estimado de review**: ~[X] minutos
 
 ---
 
@@ -221,6 +258,18 @@ behavior_changes:
 - **Confianza**: X%
 - **Archivos sin test aparente**: [lista]
 
+### Maintainer Review
+| Métrica | Valor |
+|---------|-------|
+| Comentarios predichos | X |
+| Review Readiness Score | X/100 |
+| Tiempo estimado de review | X minutos |
+| Por reviewer: Performance | X |
+| Por reviewer: Style | X |
+| Por reviewer: Security | X |
+| Por reviewer: Architecture | X |
+| Por reviewer: Testing | X |
+
 ### Logs de Ejecución
 Los logs detallados están en:
 ```
@@ -277,6 +326,7 @@ Agrupar hallazgos por el agente que los generó:
 - api-review → "API Review"
 - deps-check → "Dependencies"
 - extension-review → "Extensions"
+- maintainer-review → "Maintainer Review"
 
 ### 4. Generar Comandos de Fix
 
