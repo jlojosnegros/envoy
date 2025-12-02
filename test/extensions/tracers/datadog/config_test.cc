@@ -36,6 +36,7 @@
 #include "gtest/gtest.h"
 
 using testing::_;
+using testing::AtLeast;
 using testing::Invoke;
 using testing::NiceMock;
 using testing::Return;
@@ -61,6 +62,8 @@ public:
     cm_.initializeThreadLocalClusters({"fake_cluster"});
 
     if (init_timer) {
+      // dd-trace-cpp 0.1.11+ creates multiple timers for telemetry events.
+      EXPECT_CALL(tls_.dispatcher_, createTimer_(_)).Times(AtLeast(1));
       timer_ = new NiceMock<Event::MockTimer>(&tls_.dispatcher_);
       EXPECT_CALL(*timer_, enableTimer(flush_interval, _));
     }
@@ -158,10 +161,12 @@ TEST_F(DatadogConfigTest, CollectorHostname) {
   setup(datadog_config, true);
 
   Http::MockAsyncClientRequest request(&cm_.thread_local_cluster_.async_client_);
-  Http::AsyncClient::Callbacks* callback;
-  const absl::optional<std::chrono::milliseconds> timeout(std::chrono::seconds(1));
-  EXPECT_CALL(cm_.thread_local_cluster_.async_client_,
-              send_(_, _, Http::AsyncClient::RequestOptions().setTimeout(timeout)))
+  Http::AsyncClient::Callbacks* callback = nullptr;
+
+  // dd-trace-cpp 0.1.11+ sends additional telemetry requests (app-started, app-closing).
+  // First call: capture callback and verify Host header.
+  // Subsequent calls: return nullptr so telemetry requests fail silently.
+  EXPECT_CALL(cm_.thread_local_cluster_.async_client_, send_(_, _, _))
       .WillOnce(
           Invoke([&](Http::RequestMessagePtr& message, Http::AsyncClient::Callbacks& callbacks,
                      const Http::AsyncClient::RequestOptions&) -> Http::AsyncClient::Request* {
@@ -171,17 +176,19 @@ TEST_F(DatadogConfigTest, CollectorHostname) {
             EXPECT_EQ("fake_host", message->headers().getHostValue());
 
             return &request;
-          }));
+          }))
+      .WillRepeatedly(Return(nullptr));
 
   Tracing::SpanPtr span = tracer_->startSpan(config_, request_headers_, stream_info_,
                                              operation_name_, {Tracing::Reason::Sampling, true});
   span->finishSpan();
 
   // Timer should be re-enabled.
-  EXPECT_CALL(*timer_, enableTimer(flush_interval, _));
+  EXPECT_CALL(*timer_, enableTimer(flush_interval, _)).Times(AtLeast(1));
 
   timer_->invokeCallback();
 
+  ASSERT_NE(nullptr, callback);
   Http::ResponseMessagePtr msg(new Http::ResponseMessageImpl(Http::ResponseHeaderMapPtr{
       new Http::TestResponseHeaderMapImpl{{":status", "200"}, {"content-length", "0"}}}));
   callback->onSuccess(request, std::move(msg));
