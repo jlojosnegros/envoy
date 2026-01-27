@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package envoy.extensions.resource_monitors.idle_activity.v3;
+
+import "google/protobuf/duration.proto";
+
+import "udpa/annotations/status.proto";
+import "validate/validate.proto";
+
+option java_package = "io.envoyproxy.envoy.extensions.resource_monitors.idle_activity.v3";
+option java_outer_classname = "IdleActivityProto";
+option java_multiple_files = true;
+option go_package = "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/idle_activity/v3;idle_activityv3";
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
+
+// [#protodoc-title: Idle activity]
+// [#extension: envoy.resource_monitors.idle_activity]
+
+// The idle activity resource monitor reports high pressure when the number of active requests
+// falls below a configured threshold for a sustained duration. This can be used to trigger
+// memory release actions (like shrink_heap) during periods of low activity.
+//
+// The monitor uses "inverted" semantics: low activity results in high pressure (1.0),
+// while high activity results in low pressure (0.0). This allows the monitor to be
+// composed with existing overload triggers.
+message IdleActivityConfig {
+  // Threshold for total active requests (downstream + upstream combined).
+  // The system is considered "idle" when total active requests < threshold.
+  // If set to 0 (default), the system is only considered idle when there are
+  // no active requests at all.
+  uint64 active_requests_threshold = 1;
+
+  // Duration that the idle state must be sustained before reporting high pressure.
+  // This provides hysteresis to avoid triggering during brief pauses in traffic.
+  // Must be at least 1 second.
+  google.protobuf.Duration sustained_idle_duration = 2 [(validate.rules).duration = {
+    required: true
+    gte {seconds: 1}
+  }];
+
+  // Optional separate threshold for downstream requests only.
+  // If set, the system is also considered "idle" when downstream requests < this threshold,
+  // regardless of upstream requests. This is evaluated independently of active_requests_threshold.
+  uint64 downstream_requests_threshold = 3;
+
+  // Optional separate threshold for upstream requests only.
+  // If set, the system is also considered "idle" when upstream requests < this threshold,
+  // regardless of downstream requests. This is evaluated independently of active_requests_threshold.
+  uint64 upstream_requests_threshold = 4;
+}

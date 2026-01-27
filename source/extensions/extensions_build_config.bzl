@@ -285,6 +285,7 @@ EXTENSIONS = {
     "envoy.resource_monitors.global_downstream_max_connections":   "//source/extensions/resource_monitors/downstream_connections:config",
     "envoy.resource_monitors.cpu_utilization":          "//source/extensions/resource_monitors/cpu_utilization:config",
     "envoy.resource_monitors.cgroup_memory":          "//source/extensions/resource_monitors/cgroup_memory:config",
+    "envoy.resource_monitors.idle_activity":          "//source/extensions/resource_monitors/idle_activity:config",
 
     #
     # Stat sinks
