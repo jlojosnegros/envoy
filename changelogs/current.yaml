@@ -173,5 +173,12 @@ new_features:
     <envoy_v3_api_field_extensions.dynamic_modules.v3.DynamicModuleConfig.metrics_namespace>` field
     to ``DynamicModuleConfig``. This allows users to customize the prefix used for all metrics
     created by dynamic modules.
+- area: resource_monitors
+  change: |
+    Added :ref:`idle activity resource monitor
+    <envoy_v3_api_msg_extensions.resource_monitors.idle_activity.v3.IdleActivityConfig>` that detects
+    when Envoy is idle (low active requests) for a sustained duration and reports high pressure to
+    trigger actions like ``shrink_heap``. This enables automatic memory release during periods of low
+    activity.
 
 deprecated:
