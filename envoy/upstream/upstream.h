@@ -1169,6 +1169,21 @@ public:
    * @return  all traffic related stats for this cluster.
    */
   virtual DeferredCreationCompatibleClusterTrafficStats& trafficStats() const PURE;
+
+  /**
+   * Increment both the per-cluster upstream_rq_active gauge and the global
+   * server.total_upstream_rq_active gauge. This ensures the global gauge stays in sync
+   * with the sum of all per-cluster gauges.
+   */
+  virtual void incUpstreamRqActive() const PURE;
+
+  /**
+   * Decrement both the per-cluster upstream_rq_active gauge and the global
+   * server.total_upstream_rq_active gauge. This ensures the global gauge stays in sync
+   * with the sum of all per-cluster gauges.
+   */
+  virtual void decUpstreamRqActive() const PURE;
+
   /**
    * @return the stats scope that contains all cluster stats. This can be used to produce dynamic
    *         stats that will be freed when the cluster is removed.

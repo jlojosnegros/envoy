@@ -1372,6 +1372,16 @@ ClusterInfoImpl::ClusterInfoImpl(
                                creation_status);
     }
   }
+
+  // Get reference to global upstream request active gauge for O(1) idle activity monitoring
+  server_context.serverScope().iterate(Stats::IterateFn<Stats::Gauge>(
+      [this](const Stats::GaugeSharedPtr& gauge) -> bool {
+        if (gauge->name() == "server.total_upstream_rq_active") {
+          global_upstream_rq_active_ = gauge.get();
+          return false; // Stop iteration
+        }
+        return true; // Continue iteration
+      }));
 }
 
 // Configures the load balancer based on config.load_balancing_policy

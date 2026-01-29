@@ -889,6 +889,18 @@ public:
   DeferredCreationCompatibleClusterTrafficStats& trafficStats() const override {
     return traffic_stats_;
   }
+  void incUpstreamRqActive() const override {
+    traffic_stats_->upstream_rq_active_.inc();
+    if (global_upstream_rq_active_ != nullptr) {
+      global_upstream_rq_active_->inc();
+    }
+  }
+  void decUpstreamRqActive() const override {
+    traffic_stats_->upstream_rq_active_.dec();
+    if (global_upstream_rq_active_ != nullptr) {
+      global_upstream_rq_active_->dec();
+    }
+  }
   ClusterConfigUpdateStats& configUpdateStats() const override { return config_update_stats_; }
   ClusterLbStats& lbStats() const override { return lb_stats_; }
   ClusterEndpointStats& endpointStats() const override { return endpoint_stats_; }
@@ -1048,6 +1060,7 @@ private:
   TransportSocketMatcherPtr socket_matcher_;
   Stats::ScopeSharedPtr stats_scope_;
   mutable DeferredCreationCompatibleClusterTrafficStats traffic_stats_;
+  Stats::Gauge* global_upstream_rq_active_{nullptr}; // Global gauge for O(1) idle activity reads
   mutable ClusterConfigUpdateStats config_update_stats_;
   mutable ClusterLbStats lb_stats_;
   mutable ClusterEndpointStats endpoint_stats_;
