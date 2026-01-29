@@ -50,10 +50,16 @@ void GenericFilterStatsHelper::onRequestDecodingError() {
 void GenericFilterStatsHelper::onRequest() {
   stats_.downstream_rq_total_.inc();
   stats_.downstream_rq_active_.inc();
+  if (global_downstream_rq_active_ != nullptr) {
+    global_downstream_rq_active_->inc();
+  }
 }
 void GenericFilterStatsHelper::onRequestComplete(const StreamInfo::StreamInfo& info,
                                                  bool local_reply, bool error_reply) {
   stats_.downstream_rq_active_.dec();
+  if (global_downstream_rq_active_ != nullptr) {
+    global_downstream_rq_active_->dec();
+  }
 
   if (local_reply) {
     stats_.downstream_rq_local_.inc();

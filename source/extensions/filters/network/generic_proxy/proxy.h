@@ -362,6 +362,16 @@ public:
         cluster_manager_(context.serverFactoryContext().clusterManager()) {
     server_codec_ = config_->codecFactory().createServerCodec();
     server_codec_->setCodecCallbacks(*this);
+
+    // Initialize global downstream request gauge for idle activity monitoring
+    context.serverFactoryContext().serverScope().iterate(Stats::IterateFn<Stats::Gauge>(
+        [this](const Stats::GaugeSharedPtr& gauge) -> bool {
+          if (gauge->name() == "server.total_downstream_rq_active") {
+            stats_helper_.setGlobalDownstreamRqActiveGauge(gauge.get());
+            return false;
+          }
+          return true;
+        }));
   }
 
   // Envoy::Network::ReadFilter

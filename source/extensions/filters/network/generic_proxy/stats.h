@@ -83,6 +83,10 @@ public:
                            Stats::Scope& stats_scope)
       : code_or_flag_(code_or_flag), stats_(stats), stats_scope_(stats_scope) {}
 
+  void setGlobalDownstreamRqActiveGauge(Stats::Gauge* gauge) {
+    global_downstream_rq_active_ = gauge;
+  }
+
   void onRequestReset();
   void onRequestDecodingError();
   void onRequest();
@@ -92,6 +96,7 @@ private:
   const CodeOrFlags& code_or_flag_;
   GenericFilterStats& stats_;
   Stats::Scope& stats_scope_;
+  Stats::Gauge* global_downstream_rq_active_{nullptr};
 
   // The following two pairs are used to avoid stats name creation and symbol table lookup
   // for every request. In all practical cases, there most requests will have the same
