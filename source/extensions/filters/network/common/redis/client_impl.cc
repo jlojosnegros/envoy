@@ -349,12 +349,12 @@ ClientImpl::PendingRequest::PendingRequest(ClientImpl& parent, ClientCallbacks& 
   }
   parent.host_->cluster().trafficStats()->upstream_rq_total_.inc();
   parent.host_->stats().rq_total_.inc();
-  parent.host_->cluster().trafficStats()->upstream_rq_active_.inc();
+  parent.host_->cluster().incUpstreamRqActive();
   parent.host_->stats().rq_active_.inc();
 }
 
 ClientImpl::PendingRequest::~PendingRequest() {
-  parent_.host_->cluster().trafficStats()->upstream_rq_active_.dec();
+  parent_.host_->cluster().decUpstreamRqActive();
   parent_.host_->stats().rq_active_.dec();
 }
 

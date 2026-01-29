@@ -269,7 +269,7 @@ void ConnPoolImplBase::attachStreamToClient(Envoy::ConnectionPool::ActiveClient&
   host_->stats().rq_total_.inc();
   host_->stats().rq_active_.inc();
   traffic_stats.upstream_rq_total_.inc();
-  traffic_stats.upstream_rq_active_.inc();
+  host_->cluster().incUpstreamRqActive();
   host_->cluster().resourceManager(priority_).requests().inc();
 
   onPoolReady(client, context);
@@ -284,7 +284,7 @@ void ConnPoolImplBase::onStreamClosed(Envoy::ConnectionPool::ActiveClient& clien
   cluster_connectivity_state_.decrActiveStreams(1);
   num_active_streams_--;
   host_->stats().rq_active_.dec();
-  host_->cluster().trafficStats()->upstream_rq_active_.dec();
+  host_->cluster().decUpstreamRqActive();
   host_->cluster().resourceManager(priority_).requests().dec();
   // We don't update the capacity for HTTP/3 as the stream count should only
   // increase when a MAX_STREAMS frame is received.
