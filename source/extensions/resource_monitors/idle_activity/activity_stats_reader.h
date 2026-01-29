@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "envoy/api/api.h"
+#include "envoy/stats/stats.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -37,9 +38,10 @@ public:
 
 /**
  * Implementation of ActivityStatsReader that reads stats from the Envoy stats system.
- * Looks for gauges matching:
- *   - http.*.downstream_rq_active (downstream)
- *   - cluster.*.upstream_rq_active (upstream)
+ * Uses global server.total_upstream_rq_active and server.total_downstream_rq_active gauges
+ * for O(1) lookup instead of iterating over all per-cluster/per-listener gauges.
+ *
+ * Falls back to iterating if global gauges are not found (backwards compatibility).
  */
 class ActivityStatsReaderImpl : public ActivityStatsReader {
 public:
@@ -49,7 +51,23 @@ public:
   uint64_t upstreamActiveRequests() const override;
 
 private:
+  /**
+   * Initialize gauges by looking them up in the stats store.
+   * Called lazily on first access.
+   */
+  void initializeGauges() const;
+
+  /**
+   * Fallback method that iterates over all gauges (O(n)).
+   * Used when global gauges are not available.
+   */
+  uint64_t downstreamActiveRequestsFallback() const;
+  uint64_t upstreamActiveRequestsFallback() const;
+
   Api::Api& api_;
+  mutable bool gauges_initialized_{false};
+  mutable Stats::Gauge* upstream_gauge_{nullptr};
+  mutable Stats::Gauge* downstream_gauge_{nullptr};
 };
 
 } // namespace IdleActivityMonitor

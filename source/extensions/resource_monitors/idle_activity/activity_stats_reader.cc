@@ -12,16 +12,63 @@ namespace IdleActivityMonitor {
 
 ActivityStatsReaderImpl::ActivityStatsReaderImpl(Api::Api& api) : api_(api) {}
 
+void ActivityStatsReaderImpl::initializeGauges() const {
+  if (gauges_initialized_) {
+    return;
+  }
+
+  gauges_initialized_ = true;
+
+  // Look up the global gauges for O(1) access
+  api_.rootScope().store().iterate(
+      Stats::IterateFn<Stats::Gauge>([this](const Stats::GaugeSharedPtr& gauge) -> bool {
+        const std::string name = gauge->name();
+        if (name == "server.total_upstream_rq_active") {
+          upstream_gauge_ = gauge.get();
+        } else if (name == "server.total_downstream_rq_active") {
+          downstream_gauge_ = gauge.get();
+        }
+        // Continue until we find both gauges
+        return upstream_gauge_ == nullptr || downstream_gauge_ == nullptr;
+      }));
+}
+
 uint64_t ActivityStatsReaderImpl::downstreamActiveRequests() const {
+  initializeGauges();
+
+  if (downstream_gauge_ != nullptr) {
+    return downstream_gauge_->value();
+  }
+
+  // Fallback to iterating over all gauges if global gauge not found
+  return downstreamActiveRequestsFallback();
+}
+
+uint64_t ActivityStatsReaderImpl::upstreamActiveRequests() const {
+  initializeGauges();
+
+  if (upstream_gauge_ != nullptr) {
+    return upstream_gauge_->value();
+  }
+
+  // Fallback to iterating over all gauges if global gauge not found
+  return upstreamActiveRequestsFallback();
+}
+
+uint64_t ActivityStatsReaderImpl::downstreamActiveRequestsFallback() const {
   uint64_t total = 0;
 
   // Iterate over all gauges and sum those matching the pattern for downstream active requests.
-  // The pattern is: http.<listener_name>.downstream_rq_active
+  // Patterns include:
+  //   - http.<listener_name>.downstream_rq_active (HTTP)
+  //   - redis.<prefix>.downstream_rq_active (Redis proxy)
+  //   - generic_proxy.<prefix>.downstream_rq_active (Generic proxy)
   api_.rootScope().store().iterate(
       Stats::IterateFn<Stats::Gauge>([&total](const Stats::GaugeSharedPtr& gauge) -> bool {
         const std::string name = gauge->name();
-        // Match pattern: starts with "http." and ends with ".downstream_rq_active"
-        if (absl::StartsWith(name, "http.") && absl::EndsWith(name, ".downstream_rq_active")) {
+        // Match any gauge ending with .downstream_rq_active, excluding the global gauge
+        if (absl::EndsWith(name, ".downstream_rq_active") &&
+            !absl::StartsWith(name, "server.")) {
           total += gauge->value();
         }
         return true; // Continue iteration
@@ -30,7 +77,7 @@ uint64_t ActivityStatsReaderImpl::downstreamActiveRequests() const {
   return total;
 }
 
-uint64_t ActivityStatsReaderImpl::upstreamActiveRequests() const {
+uint64_t ActivityStatsReaderImpl::upstreamActiveRequestsFallback() const {
   uint64_t total = 0;
 
   // Iterate over all gauges and sum those matching the pattern for upstream active requests.
