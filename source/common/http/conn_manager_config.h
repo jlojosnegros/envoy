@@ -104,10 +104,41 @@ struct ConnectionManagerStats {
 
   Stats::StatName prefixStatName() const { return prefix_stat_name_storage_.statName(); }
 
+  /**
+   * Set the global gauge for tracking total downstream requests across all listeners.
+   * This must be called after construction to enable global gauge updates.
+   */
+  void setGlobalDownstreamRqActiveGauge(Stats::Gauge* gauge) {
+    global_downstream_rq_active_ = gauge;
+  }
+
+  /**
+   * Increment both the per-listener downstream_rq_active gauge and the global
+   * server.total_downstream_rq_active gauge.
+   */
+  void incDownstreamRqActive() {
+    named_.downstream_rq_active_.inc();
+    if (global_downstream_rq_active_ != nullptr) {
+      global_downstream_rq_active_->inc();
+    }
+  }
+
+  /**
+   * Decrement both the per-listener downstream_rq_active gauge and the global
+   * server.total_downstream_rq_active gauge.
+   */
+  void decDownstreamRqActive() {
+    named_.downstream_rq_active_.dec();
+    if (global_downstream_rq_active_ != nullptr) {
+      global_downstream_rq_active_->dec();
+    }
+  }
+
   ConnectionManagerNamedStats named_;
   std::string prefix_;
   Stats::StatNameManagedStorage prefix_stat_name_storage_;
   Stats::Scope& scope_;
+  Stats::Gauge* global_downstream_rq_active_{nullptr};
 };
 
 /**

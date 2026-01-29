@@ -737,6 +737,16 @@ HttpConnectionManagerConfig::HttpConnectionManagerConfig(
           std::make_pair(name, FilterConfig{std::move(factories), enabled}));
     }
   }
+
+  // Get reference to global downstream request active gauge for O(1) idle activity monitoring
+  context_.serverFactoryContext().serverScope().iterate(Stats::IterateFn<Stats::Gauge>(
+      [this](const Stats::GaugeSharedPtr& gauge) -> bool {
+        if (gauge->name() == "server.total_downstream_rq_active") {
+          stats_.setGlobalDownstreamRqActiveGauge(gauge.get());
+          return false; // Stop iteration
+        }
+        return true; // Continue iteration
+      }));
 }
 
 Http::ServerConnectionPtr HttpConnectionManagerConfig::createCodec(

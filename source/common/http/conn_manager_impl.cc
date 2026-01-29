@@ -923,7 +923,7 @@ ConnectionManagerImpl::ActiveStream::ActiveStream(ConnectionManagerImpl& connect
                                connection_manager_.read_callbacks_->connection().dispatcher());
 
   connection_manager_.stats_.named_.downstream_rq_total_.inc();
-  connection_manager_.stats_.named_.downstream_rq_active_.inc();
+  connection_manager_.stats_.incDownstreamRqActive();
   if (connection_manager_.codec_->protocol() == Protocol::Http2) {
     connection_manager_.stats_.named_.downstream_rq_http2_total_.inc();
   } else if (connection_manager_.codec_->protocol() == Protocol::Http3) {
@@ -1001,7 +1001,7 @@ void ConnectionManagerImpl::ActiveStream::log(AccessLog::AccessLogType type) {
 void ConnectionManagerImpl::ActiveStream::completeRequest() {
   filter_manager_.streamInfo().onRequestComplete();
 
-  connection_manager_.stats_.named_.downstream_rq_active_.dec();
+  connection_manager_.stats_.decDownstreamRqActive();
   if (filter_manager_.streamInfo().healthCheck()) {
     connection_manager_.config_->tracingStats().health_check_.inc();
   }
