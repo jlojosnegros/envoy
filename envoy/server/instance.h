@@ -37,6 +37,7 @@ namespace Envoy {
 
 namespace Stats {
 class SinkPredicates;
+class Gauge;
 }
 
 namespace Server {
@@ -321,6 +322,18 @@ public:
    * @return Envoy's xDS manager.
    */
   virtual Config::XdsManager& xdsManager() PURE;
+
+  /**
+   * @return Stats::Gauge& the global gauge tracking total active upstream requests across all
+   * clusters.
+   */
+  virtual Stats::Gauge& totalUpstreamRqActive() PURE;
+
+  /**
+   * @return Stats::Gauge& the global gauge tracking total active downstream requests across all
+   * listeners.
+   */
+  virtual Stats::Gauge& totalDownstreamRqActive() PURE;
 };
 
 // Pick a class HdsDelegate inherits from

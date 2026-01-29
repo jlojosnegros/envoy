@@ -90,6 +90,8 @@ struct ServerCompilationSettingsStats {
   GAUGE(state, NeverImport)                                                                        \
   GAUGE(stats_recent_lookups, NeverImport)                                                         \
   GAUGE(total_connections, Accumulate)                                                             \
+  GAUGE(total_downstream_rq_active, Accumulate)                                                    \
+  GAUGE(total_upstream_rq_active, Accumulate)                                                      \
   GAUGE(uptime, Accumulate)                                                                        \
   GAUGE(version, NeverImport)                                                                      \
   HISTOGRAM(initialization_time_ms, Milliseconds)
@@ -337,6 +339,12 @@ public:
     stats_store_.setSinkPredicates(std::move(sink_predicates));
   }
   Config::XdsManager& xdsManager() override { return *xds_manager_; }
+  Stats::Gauge& totalUpstreamRqActive() override {
+    return server_stats_->total_upstream_rq_active_;
+  }
+  Stats::Gauge& totalDownstreamRqActive() override {
+    return server_stats_->total_downstream_rq_active_;
+  }
 
   // ServerLifecycleNotifier
   ServerLifecycleNotifier::HandlePtr registerCallback(Stage stage, StageCallback callback) override;
