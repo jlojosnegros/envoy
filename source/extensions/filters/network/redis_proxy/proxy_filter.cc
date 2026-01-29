@@ -326,11 +326,11 @@ Network::FilterStatus ProxyFilter::onData(Buffer::Instance& data, bool) {
 
 ProxyFilter::PendingRequest::PendingRequest(ProxyFilter& parent) : parent_(parent) {
   parent.config_->stats_.downstream_rq_total_.inc();
-  parent.config_->stats_.downstream_rq_active_.inc();
+  parent.config_->stats_.incDownstreamRqActive();
 }
 
 ProxyFilter::PendingRequest::~PendingRequest() {
-  parent_.config_->stats_.downstream_rq_active_.dec();
+  parent_.config_->stats_.decDownstreamRqActive();
 }
 
 } // namespace RedisProxy

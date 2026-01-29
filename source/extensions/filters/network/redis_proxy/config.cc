@@ -56,6 +56,16 @@ Network::FilterFactoryCb RedisProxyFilterConfigFactory::createFilterFactoryFromP
       proto_config, context.scope(), context.drainDecision(), server_context.runtime(),
       server_context.api(), context.serverFactoryContext().timeSource(), cache_manager_factory);
 
+  // Initialize global downstream request gauge for idle activity monitoring
+  context.serverFactoryContext().serverScope().iterate(Stats::IterateFn<Stats::Gauge>(
+      [&filter_config](const Stats::GaugeSharedPtr& gauge) -> bool {
+        if (gauge->name() == "server.total_downstream_rq_active") {
+          filter_config->stats_.setGlobalDownstreamRqActiveGauge(gauge.get());
+          return false; // Stop iteration
+        }
+        return true; // Continue iteration
+      }));
+
   envoy::extensions::filters::network::redis_proxy::v3::RedisProxy::PrefixRoutes prefix_routes(
       proto_config.prefix_routes());
 

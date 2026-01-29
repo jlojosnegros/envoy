@@ -43,6 +43,35 @@ namespace RedisProxy {
  */
 struct ProxyStats {
   ALL_REDIS_PROXY_STATS(GENERATE_COUNTER_STRUCT, GENERATE_GAUGE_STRUCT)
+
+  /**
+   * Set the global gauge for tracking total downstream requests across all listeners.
+   */
+  void setGlobalDownstreamRqActiveGauge(Stats::Gauge* gauge) {
+    global_downstream_rq_active_ = gauge;
+  }
+
+  /**
+   * Increment both the per-listener downstream_rq_active gauge and the global gauge.
+   */
+  void incDownstreamRqActive() {
+    downstream_rq_active_.inc();
+    if (global_downstream_rq_active_ != nullptr) {
+      global_downstream_rq_active_->inc();
+    }
+  }
+
+  /**
+   * Decrement both the per-listener downstream_rq_active gauge and the global gauge.
+   */
+  void decDownstreamRqActive() {
+    downstream_rq_active_.dec();
+    if (global_downstream_rq_active_ != nullptr) {
+      global_downstream_rq_active_->dec();
+    }
+  }
+
+  Stats::Gauge* global_downstream_rq_active_{nullptr};
 };
 
 /**
