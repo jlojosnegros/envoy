@@ -298,3 +298,18 @@ envoy_cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+envoy_cc_library(
+    name = "indexed_stats_store_lib",
+    srcs = ["indexed_stats_store.cc"],
+    hdrs = ["indexed_stats_store.h"],
+    deps = [
+        ":index_matcher_lib",
+        "//envoy/stats:stats_index_interface",
+        "//envoy/stats:stats_interface",
+        "//source/common/common:assert_lib",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
