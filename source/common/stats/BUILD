@@ -285,3 +285,16 @@ envoy_cc_library(
         "//envoy/stats:stats_interface",
     ],
 )
+
+envoy_cc_library(
+    name = "index_matcher_lib",
+    srcs = ["index_matcher_impl.cc"],
+    hdrs = ["index_matcher_impl.h"],
+    deps = [
+        ":symbol_table_lib",
+        "//envoy/stats:index_matcher_interface",
+        "//source/common/common:fmt_lib",
+        "//source/common/common:regex_lib",
+        "@com_google_absl//absl/strings",
+    ],
+)
