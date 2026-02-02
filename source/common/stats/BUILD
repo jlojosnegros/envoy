@@ -313,3 +313,11 @@ envoy_cc_library(
         "@com_google_absl//absl/synchronization",
     ],
 )
+
+envoy_cc_library(
+    name = "aggregated_stats_index_lib",
+    hdrs = ["aggregated_stats_index.h"],
+    deps = [
+        "//envoy/stats:stats_index_interface",
+    ],
+)
