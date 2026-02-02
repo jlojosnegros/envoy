@@ -215,6 +215,9 @@ public:
   void setSinkPredicates(std::unique_ptr<SinkPredicates>&& sink_predicates) override;
   OptRef<SinkPredicates> sinkPredicates() override { return sink_predicates_; }
 
+  void setStatsIndices(std::unique_ptr<class IndexedStatsStore>&& indexed_store) override;
+  class IndexedStatsStore* statsIndices() override { return stats_indices_.get(); }
+
   /**
    * @return a thread synchronizer object used for controlling thread behavior in tests.
    */
@@ -547,6 +550,7 @@ private:
   void addScope(std::shared_ptr<ScopeImpl>& new_scope);
 
   OptRef<SinkPredicates> sink_predicates_;
+  std::unique_ptr<class IndexedStatsStore> stats_indices_;
   Allocator& alloc_;
   Event::Dispatcher* main_thread_dispatcher_{};
   using TlsCacheSlot = ThreadLocal::TypedSlotPtr<TlsCache>;

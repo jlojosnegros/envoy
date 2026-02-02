@@ -274,6 +274,30 @@ public:
   virtual void setSinkPredicates(std::unique_ptr<SinkPredicates>&& sink_predicates) PURE;
 
   virtual OptRef<SinkPredicates> sinkPredicates() PURE;
+
+  /**
+   * Configure secondary stats indices for efficient metric lookup.
+   *
+   * This should be called during bootstrap initialization, BEFORE any metrics
+   * are created. This allows the most efficient indexing path where indices
+   * are registered before metrics exist, avoiding the need to scan existing
+   * metrics.
+   *
+   * Typical initialization order:
+   *   setTagProducer()
+   *   setStatsMatcher()
+   *   setHistogramSettings()
+   *   setStatsIndices()     <-- Called here
+   *   ... create first metrics ...
+   *
+   * @param indexed_store the IndexedStatsStore containing configured indices
+   */
+  virtual void setStatsIndices(std::unique_ptr<class IndexedStatsStore>&& indexed_store) PURE;
+
+  /**
+   * @return the IndexedStatsStore if configured, nullptr otherwise.
+   */
+  virtual class IndexedStatsStore* statsIndices() PURE;
 };
 
 using StoreRootPtr = std::unique_ptr<StoreRoot>;

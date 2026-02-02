@@ -1238,6 +1238,11 @@ void ThreadLocalStoreImpl::setSinkPredicates(std::unique_ptr<SinkPredicates>&& s
   }
 }
 
+void ThreadLocalStoreImpl::setStatsIndices(
+    std::unique_ptr<class IndexedStatsStore>&& indexed_store) {
+  stats_indices_ = std::move(indexed_store);
+}
+
 void ThreadLocalStoreImpl::extractAndAppendTags(StatName name, StatNamePool& pool,
                                                 StatNameTagVector& stat_tags) {
   extractAndAppendTags(symbolTable().toString(name), pool, stat_tags);
