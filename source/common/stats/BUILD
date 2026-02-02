@@ -321,3 +321,17 @@ envoy_cc_library(
         "//envoy/stats:stats_index_interface",
     ],
 )
+
+envoy_cc_library(
+    name = "stats_index_factory_lib",
+    srcs = ["stats_index_factory.cc"],
+    hdrs = ["stats_index_factory.h"],
+    deps = [
+        ":indexed_stats_store_lib",
+        "//source/common/common:assert_lib",
+        "//source/common/common:regex_lib",
+        "@com_google_absl//absl/strings",
+        "@envoy_api//envoy/config/metrics/v3:pkg_cc_proto",
+        "@envoy_api//envoy/type/matcher/v3:pkg_cc_proto",
+    ],
+)
