@@ -96,3 +96,15 @@ envoy_cc_library(
         "//envoy/common:pure_lib",
     ],
 )
+
+envoy_cc_library(
+    name = "stats_index_interface",
+    hdrs = ["stats_index.h"],
+    deps = [
+        ":index_matcher_interface",
+        ":stats_interface",
+        "//envoy/common:pure_lib",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
