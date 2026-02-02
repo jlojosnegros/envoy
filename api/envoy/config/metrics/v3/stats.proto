@@ -3,6 +3,7 @@ syntax = "proto3";
 package envoy.config.metrics.v3;
 
 import "envoy/config/core/v3/address.proto";
+import "envoy/config/metrics/v3/stats_index.proto";
 import "envoy/type/matcher/v3/string.proto";
 
 import "google/protobuf/any.proto";
@@ -104,6 +105,35 @@ message StatsConfig {
   //       3600000
   //     ]
   repeated HistogramBucketSettings histogram_bucket_settings = 4;
+
+  // Configuration for secondary stats indices. Secondary indices allow efficient O(k) iteration
+  // over k matching metrics instead of O(n) iteration over all n metrics. This is particularly
+  // useful for:
+  //
+  // - Resource monitors that need to aggregate specific gauge values
+  // - Admin endpoints that filter metrics by pattern
+  // - Stats sinks that only export specific metrics
+  //
+  // Indices configured here are created at bootstrap time before any metrics exist,
+  // allowing the most efficient indexing without scanning existing metrics.
+  //
+  // Example configuration:
+  //
+  // .. code-block:: yaml
+  //
+  //   stats_indices:
+  //     indices:
+  //     - name: "active_connections"
+  //       metric_type: GAUGE
+  //       prefix_suffix:
+  //         suffix: ".active_connections"
+  //     - name: "upstream_rq_total"
+  //       metric_type: COUNTER
+  //       prefix_suffix:
+  //         prefix: "cluster."
+  //         suffix: ".upstream_rq"
+  //
+  StatsIndicesConfig stats_indices = 5;
 }
 
 // Configuration for disabling stat instantiation.
