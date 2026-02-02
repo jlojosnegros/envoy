@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package envoy.config.metrics.v3;
+
+import "envoy/type/matcher/v3/string.proto";
+
+import "udpa/annotations/status.proto";
+import "validate/validate.proto";
+
+option java_package = "io.envoyproxy.envoy.config.metrics.v3";
+option java_outer_classname = "StatsIndexProto";
+option java_multiple_files = true;
+option go_package = "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3;metricsv3";
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
+
+// [#protodoc-title: Stats Index]
+// Configuration for stats secondary indices.
+
+// Configuration for a single stats index.
+// An index allows O(k) iteration over k matching metrics instead of O(n) over all metrics.
+message StatsIndexConfig {
+  // The unique name for this index. Used for lookup and debugging.
+  string name = 1 [(validate.rules).string = {min_len: 1}];
+
+  // The type of metric this index applies to.
+  enum MetricType {
+    // Unspecified metric type. Will cause validation error.
+    METRIC_TYPE_UNSPECIFIED = 0;
+
+    // Index for Counter metrics.
+    COUNTER = 1;
+
+    // Index for Gauge metrics.
+    GAUGE = 2;
+  }
+
+  // The type of metric to index.
+  MetricType metric_type = 2 [(validate.rules).enum = {defined_only: true not_in: 0}];
+
+  // Matcher configuration for determining which metrics belong in this index.
+  oneof matcher {
+    option (validate.required) = true;
+
+    // Match metrics by prefix and/or suffix. This is the most efficient matcher
+    // and should be preferred when possible.
+    PrefixSuffixMatcher prefix_suffix = 3;
+
+    // Match metrics using a StringMatcher. This supports exact match, prefix,
+    // suffix, contains, and regex patterns.
+    type.matcher.v3.StringMatcher string_matcher = 4;
+  }
+
+  // If true, the index will maintain a running sum that updates automatically
+  // as metrics change. This enables O(1) aggregation reads.
+  // Note: This feature requires observer support in core metric types.
+  // Currently, aggregation is computed via O(k) iteration.
+  bool enable_aggregation = 5;
+}
+
+// Matcher that matches metrics by prefix and/or suffix.
+// Both prefix and suffix can be specified together for AND semantics.
+message PrefixSuffixMatcher {
+  // The prefix to match. Empty string matches any prefix.
+  string prefix = 1;
+
+  // The suffix to match. Empty string matches any suffix.
+  string suffix = 2;
+}
+
+// Configuration for multiple stats indices.
+message StatsIndicesConfig {
+  // List of index configurations.
+  repeated StatsIndexConfig indices = 1;
+}
