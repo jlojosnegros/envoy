@@ -108,3 +108,11 @@ envoy_cc_library(
         "@com_google_absl//absl/synchronization",
     ],
 )
+
+envoy_cc_library(
+    name = "metric_aggregation_observer_interface",
+    hdrs = ["metric_aggregation_observer.h"],
+    deps = [
+        "//envoy/common:pure_lib",
+    ],
+)
