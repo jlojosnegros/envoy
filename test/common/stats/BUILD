@@ -446,3 +446,15 @@ envoy_cc_test(
         "//test/test_common:utility_lib",
     ],
 )
+
+envoy_cc_test(
+    name = "aggregated_stats_index_test",
+    srcs = ["aggregated_stats_index_test.cc"],
+    rbe_pool = "6gig",
+    deps = [
+        "//source/common/stats:aggregated_stats_index_lib",
+        "//source/common/stats:index_matcher_lib",
+        "//source/common/stats:isolated_store_lib",
+        "//test/test_common:utility_lib",
+    ],
+)
