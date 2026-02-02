@@ -45,6 +45,8 @@
 #include "source/common/runtime/runtime_impl.h"
 #include "source/common/runtime/runtime_keys.h"
 #include "source/common/signal/fatal_error_handler.h"
+#include "source/common/stats/indexed_stats_store.h"
+#include "source/common/stats/stats_index_factory.h"
 #include "source/common/stats/stats_matcher_impl.h"
 #include "source/common/stats/tag_producer_impl.h"
 #include "source/common/stats/thread_local_store.h"
@@ -550,6 +552,15 @@ absl::Status InstanceBase::initializeOrThrow(Network::Address::InstanceConstShar
       bootstrap_.stats_config(), stats_store_.symbolTable(), server_contexts_));
   stats_store_.setHistogramSettings(
       std::make_unique<Stats::HistogramSettingsImpl>(bootstrap_.stats_config(), server_contexts_));
+
+  // Initialize stats indices before creating any metrics.
+  // This allows the most efficient indexing path where indices exist before metrics.
+  if (bootstrap_.stats_config().has_stats_indices()) {
+    auto indexed_store = std::make_unique<Stats::IndexedStatsStore>(stats_store_);
+    Stats::StatsIndexFactory::createIndicesFromConfig(
+        *indexed_store, bootstrap_.stats_config().stats_indices());
+    stats_store_.setStatsIndices(std::move(indexed_store));
+  }
 
   const std::string server_stats_prefix = "server.";
   const std::string server_compilation_settings_stats_prefix = "server.compilation_settings";
