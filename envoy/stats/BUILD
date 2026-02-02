@@ -88,3 +88,11 @@ envoy_cc_library(
     name = "custom_stat_namespaces_interface",
     hdrs = ["custom_stat_namespaces.h"],
 )
+
+envoy_cc_library(
+    name = "index_matcher_interface",
+    hdrs = ["index_matcher.h"],
+    deps = [
+        "//envoy/common:pure_lib",
+    ],
+)
