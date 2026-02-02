@@ -423,3 +423,15 @@ envoy_cc_test(
         "//source/common/stats:symbol_table_lib",
     ],
 )
+
+envoy_cc_test(
+    name = "stats_index_test",
+    srcs = ["stats_index_test.cc"],
+    rbe_pool = "6gig",
+    deps = [
+        "//envoy/stats:stats_index_interface",
+        "//source/common/stats:index_matcher_lib",
+        "//source/common/stats:isolated_store_lib",
+        "//test/test_common:utility_lib",
+    ],
+)
