@@ -49,6 +49,8 @@ envoy_cc_library(
         "//envoy/event:dispatcher_interface",
         "//envoy/server/overload:overload_manager_interface",
         "//envoy/stats:stats_interface",
+        "//source/common/protobuf:utility_lib",
         "//source/common/stats:symbol_table_lib",
+        "@envoy_api//envoy/config/overload/v3:pkg_cc_proto",
     ],
 )
